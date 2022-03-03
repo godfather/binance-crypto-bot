@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { BaseHttpClient } from "./base-http-client";
 import { CandleType } from "../types/candle-types";
 import { Wallet } from '../types/wallet-types';
+import { OrderType, OrderSide, OrderResponse } from '../types/order-types';
 import crypto from 'crypto';
 import qs from 'qs';
 
@@ -34,6 +35,17 @@ export class ApiHelper extends BaseHttpClient {
         const signature = this._generateSignature(qs.stringify({ timestamp:timeStamp }));
         return this.instance.get<unknown, Wallet>('/account', {
             params: { timestamp:timeStamp, signature:signature },
+        });
+    }
+
+    //MAKET ONLY
+    public newOrder(symbol:string, side:OrderSide, type:OrderType, quantity:number) {
+        const timestamp = Date.now();
+        const params = { symbol, side, type, quantity, timestamp };
+        const signature = this._generateSignature(qs.stringify(params));
+        // console.log(params);
+        return this.instance.post<unknown, OrderResponse>('/order', null, {
+            params: {...params, signature},
         });
     }
 
