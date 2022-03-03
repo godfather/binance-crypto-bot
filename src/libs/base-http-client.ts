@@ -1,9 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 
-declare module 'axios' {
-    export interface AxiosResAxiosPromiseponse<T=any> extends Promise<T>{}
-}
-
 export abstract class BaseHttpClient {
     protected readonly instance:AxiosInstance;
     
