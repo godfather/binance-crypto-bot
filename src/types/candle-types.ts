@@ -26,6 +26,7 @@ export interface KlineCandle {
     k: KCandle;
 }
 
+
 //REST CANDLE
-export type CandleType = string|number[];
+export type CandleType = (string|number)[];
 
