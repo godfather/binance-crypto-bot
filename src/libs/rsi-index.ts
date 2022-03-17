@@ -1,4 +1,4 @@
-export const calcRSI = (closes:number[]) => {
+export const calcRSI = (closes:number[]):number => {
     let hights:number = 0;
     let downs:number = 0;
 

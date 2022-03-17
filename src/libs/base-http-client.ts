@@ -3,9 +3,9 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 export abstract class BaseHttpClient {
     protected readonly instance:AxiosInstance;
     
-    public constructor(baseURL:string, privateCall=false) {
+    public constructor(baseURL:string, privateCall=true) {
         this.instance = axios.create({ baseURL });
-        this._initializeResponseInterceptor();
+        this._initializeResponseInterceptor();        
         if(privateCall) this._initializeRequestInterceptor();
     }
 
