@@ -18,8 +18,6 @@ let orders:OrderResponse[]= [];
 let wallet:WalletBase;
 
 ws.onopen = async _ => {
-    console.log("New connection opened");
-
     //GETTING THE WALLET DATA
     wallet = new WalletBase(
         WalletBase.walletLimit(process.env.WALLET_LIMIT!),
