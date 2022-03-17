@@ -19,15 +19,18 @@ let wallet:WalletBase;
 
 ws.onopen = async _ => {
     console.log("New connection opened");
+
+    //GETTING THE WALLET DATA
     wallet = new WalletBase(
         WalletBase.walletLimit(process.env.WALLET_LIMIT!),
         await WalletBase.loadExternalWallet()
     );
 
+    //PRINTTING THE WALLET STATUS
     console.log(wallet.status);
 
+    //LOADING FROM BINANCE THE LATEST CANDLES AND CONVERTING INTO CANDLES OBJECT ARRAY
     const response = await ApiHelper.getInstance().getLatestCandles('BTCBUSD');    
-    
     response.forEach((candle:CandleType) => {
         const currentCandle = new CandleBase(candle, prevCandlePrice);
         candles.push(currentCandle);
@@ -44,42 +47,42 @@ ws.onerror = event => {
 }
 
 ws.onmessage = async event => {
-    
-    // console.log(response);
-    // ws.close();
+    prevCandlePrice = candles[candles.length -1].closePrice;                        //Store the latest candle close price
+    const klineData = JSON.parse(event.data.toString()) as unknown as KlineCandle;  //parse the current kline data into json 
+    const candle = new CandleBase(klineData, prevCandlePrice);                      //convert into a Candle object
 
-    prevCandlePrice = candles[candles.length -1].closePrice;
-    const klineData = JSON.parse(event.data.toString()) as unknown as KlineCandle;
-    const candle = new CandleBase(klineData, prevCandlePrice);
-    // console.log(klineData);
-    // console.log(candle);
-
+    //PROCESS ONLY IF CURRENT CANDLE START TIME IS DIFFERENT OF THE CANDLE START TIME
     if(currentStartTime != candle.openTimeMS) {
-        if(candles.length > 15) candles.shift();
-        candles.push(candle);
-        currentStartTime = candle.openTimeMS;
+        if(candles.length > 15) candles.shift(); // if has more than 15 candles remove one
+        candles.push(candle);                    // push the current candle to candles array
+        currentStartTime = candle.openTimeMS;    // update the current start time
 
+        //BUY AND SELL ONLY IF THE NUMBER OF CANDLES IS BIGGER THAN 13
         if(candles.length > 13) {
-            const rsi:number = calcRSI(candles.map((candle:CandleBase) => candle.closePrice));
-            console.log(rsi);
+            const rsi:number = calcRSI(candles.map((candle:CandleBase) => candle.closePrice)); //calculates the RSI 
+            console.log(rsi); //print the current RSI
 
+            //BUY IF RSI OVERMATCH 70
             if(rsi > 70) {
                 console.log(`Vendendo ${process.env.SELL_AUMONT} BTC por ${candle.closePrice} USDT`);
                 ApiHelper.getPrivateInstance().newOrder('BTCUSDT', OrderSide.SELL, OrderType.MARKET, sellAumont).then(response => {
-                    orders.push(response);
-                    console.table(orders);
-                }).catch(e => console.log(e));;
+                    orders.push(response); //update orders
+                    console.table(orders); //log orders
+                }).catch(e => console.log(e));
             }
 
+            //BUY IF RSI IS ABOVE THE 30
             if(rsi < 30) {
                 console.log(`Comprando ${process.env.SELL_AUMONT} BTC por ${candle.closePrice} USDT`);
                 ApiHelper.getPrivateInstance().newOrder('BTCUSDT', OrderSide.BUY, OrderType.MARKET, buyAumont).then(response => {
-                    orders.push(response);
-                    console.table(orders);
-                }).catch(e => console.log(e));;
+                    orders.push(response); //update order
+                    console.table(orders); //log orders
+                }).catch(e => console.log(e));
             }
         }
-        console.table(candles);
+
+
+        console.table(candles); //print candles
     }
 }
 
