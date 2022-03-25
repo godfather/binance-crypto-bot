@@ -1,0 +1,17 @@
+version: '3'
+networks:
+  data:
+services:
+  bot:
+    image: node:14.9.0
+    volumes:
+      - ./bot:/bot
+    command: bash -c "cd /bot && npm install && node ./dist/index.js"
+    depends_on:
+      - db
+    networks:
+      - data
+  db:
+    image: mongo:5.0.6
+    networks:
+      - data
