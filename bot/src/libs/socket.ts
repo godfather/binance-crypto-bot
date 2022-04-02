@@ -1,35 +1,35 @@
-import 'dotenv/config';
 import WebSocket from "ws";
 
-export class Socket {
+export abstract class Socket {
     private _ws:WebSocket;
-    private _path:string;
-    private static _instance:Socket;
-    private _onOpenHandler:(event:WebSocket.Event) => void;
-    private _onMessageHandler:(event:WebSocket.Event) => void;
+    private _apiAddress:string;
 
-    private constructor() {
-        this._ws = new WebSocket(`${process.env.WS_URL!}${this._path}`);
-    }
-
-    public static getInstance():Socket {
-        if(!this._instance) this._instance = new Socket();
-        return this._instance;
+    public constructor(address:string) {
+        this._apiAddress = address;
     }
 
     public run():void {
-        this._ws.onopen = this._onOpenHandler;
+        this.start();
+        this._ws.onopen = this.onOpenHandler;
         this._ws.onclose = this._onCloseHandler;
         this._ws.onerror = this._onErrorHandler;
-        this._ws.onmessage = this._onMessageHandler;
+        this._ws.onmessage = this.onMessageHandler;
     }
 
-    set onOpenHandler(fn:(event:WebSocket.Event) => void) {
-        this._onOpenHandler = fn;
+    public start():void {
+        console.log('starting websocket');
+        console.log(this._apiAddress);
+        this._ws = new WebSocket(this._apiAddress);
     }
 
-    set onMessageHandler(fn:(event:WebSocket.Event) => void) {
-        this._onMessageHandler = fn;
+    public stop():Promise<void> {
+        console.log('stopping websocket');
+        this._ws.close();
+        return new Promise<void>(resolve => resolve());
+    }
+
+    public restart():void {
+        this.stop().then(() => setTimeout(this.run.bind(this), 1000));
     }
 
     private _onCloseHandler(event:WebSocket.CloseEvent) {
@@ -37,6 +37,11 @@ export class Socket {
     }
 
     private _onErrorHandler(event:WebSocket.ErrorEvent) {
-        console.error("Error: " + event.message);
+        this._ws.close();
+        console.error(event);
     }
+
+    public abstract onOpenHandler(event:WebSocket.Event):void;
+
+    public abstract onMessageHandler(event:WebSocket.MessageEvent):void;
 }

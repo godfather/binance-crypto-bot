@@ -1,0 +1,8 @@
+{
+    "cryptoCoins": [
+        "BTC", 
+        "ADA",
+        "ETH"
+    ],
+    "stableCoin": "USDT"
+}

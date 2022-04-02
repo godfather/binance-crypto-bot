@@ -6,6 +6,8 @@ import WebSocket from "ws";
 import { CandleBase } from "./models/candle-base";
 import { calcRSI } from "./libs/rsi-index";
 import { Operation, WalletBase } from "./models/wallet-mode";
+import { fstat, watch, readFile } from 'fs';
+
 
 const sellAumont:number = parseFloat(process.env.SELL_AUMONT!);
 const buyAumont:number = parseFloat(process.env.BUY_AUMONT!);
@@ -18,6 +20,8 @@ let orders:OrderResponse[]= [];
 let wallet:WalletBase;
 
 ws.onopen = async _ => {
+    console.log("WS Connected");
+/*
     //GETTING THE WALLET DATA
     wallet = new WalletBase(
         WalletBase.walletLimit(process.env.WALLET_LIMIT!),
@@ -34,6 +38,7 @@ ws.onopen = async _ => {
         candles.push(currentCandle);
         prevCandlePrice = currentCandle.closePrice;
     });
+*/
 }
 
 ws.onclose = _ => {
@@ -45,6 +50,8 @@ ws.onerror = event => {
 }
 
 ws.onmessage = async event => {
+    console.log(event.data);
+/*    
     prevCandlePrice = candles[candles.length -1].closePrice;                        //Store the latest candle close price
     const klineData = JSON.parse(event.data.toString()) as unknown as KlineCandle;  //parse the current kline data into json 
     const candle = new CandleBase(klineData, prevCandlePrice);                      //convert into a Candle object
@@ -82,6 +89,7 @@ ws.onmessage = async event => {
 
         console.table(candles); //print candles
     }
+*/
 }
 
 // ----------- //
@@ -104,7 +112,7 @@ ws.onmessage = async event => {
 
 
 // (async () => {
-//     // orders.push(await ApiHelper.getInstance(true).newOrder('BTCUSDT', OrderSide.BUY, OrderType.MARKET, buyAumont));
+//     orders.push(await ApiHelper.getPrivateInstance().newOrder('BTCUSDT', OrderSide.SELL, OrderType.MARKET, 0.19));
 //     let wallet:WalletBase = new WalletBase(
 //         WalletBase.walletLimit(process.env.WALLET_LIMIT!),
 //         await WalletBase.loadExternalWallet()
@@ -118,3 +126,22 @@ ws.onmessage = async event => {
 //     wallet.limitReached('USDT');
 
 // })();
+
+watch('./config', (event, filename) => {
+    console.log("THE EVENT: " + event);
+    console.log("FILENAME: " + filename);
+
+    if(filename && /coin/.test(filename)) {
+        readFile(`./config/${filename}`, 'utf8', (err, dataString) => {
+            if(err) {
+                console.log(err);
+                return;
+            }
+
+            let jsonString = JSON.parse(dataString);
+            console.log(jsonString);
+            console.log('RESTARTED');
+        });
+        // ws.restart();
+    }
+});
