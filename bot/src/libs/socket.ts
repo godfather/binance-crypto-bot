@@ -10,10 +10,10 @@ export abstract class Socket {
 
     public run():void {
         this.start();
-        this._ws.onopen = this.onOpenHandler;
-        this._ws.onclose = this._onCloseHandler;
-        this._ws.onerror = this._onErrorHandler;
-        this._ws.onmessage = this.onMessageHandler;
+        this._ws.onopen = this.onOpenHandler.bind(this);
+        this._ws.onclose = this._onCloseHandler.bind(this);
+        this._ws.onerror = this._onErrorHandler.bind(this);
+        this._ws.onmessage = this.onMessageHandler.bind(this);
     }
 
     public start():void {

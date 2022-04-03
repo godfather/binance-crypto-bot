@@ -56,8 +56,12 @@ export class WalletBase {
         return (w:WalletBase):void => { w._expendLimit = parseFloat(`${limit}`) }
     }
 
-    public static async loadExternalWallet():Promise<WalletOption> {
-        const data = await ApiHelper.getPrivateInstance().getWalletInfo();
-        return (w:WalletBase):void => { w._wallet = data; }
+    public static loadExternalWallet(wallet:Wallet):WalletOption {
+        return (w:WalletBase):void => { w._wallet = wallet; }
     }
+
+    // public static async loadExternalWallet():Promise<WalletOption> {
+    //     const data = await ApiHelper.getPrivateInstance().getWalletInfo();
+    //     return (w:WalletBase):void => { w._wallet = data; }
+    // }
 }
