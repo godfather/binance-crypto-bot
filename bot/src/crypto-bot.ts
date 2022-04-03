@@ -9,7 +9,7 @@ import { CandleBase } from './models/candle-base';
 import { OrderResponse, OrderSide, OrderType } from "./types/order-types";
 import { calcRSI } from "./libs/rsi-index";
 
-class CryptoBot extends Socket {
+export class CryptoBot extends Socket {
 
     private _wallet:WalletBase
     private _candles:CandleBase[];
@@ -90,21 +90,9 @@ class CryptoBot extends Socket {
     private _createOrder(candle:CandleBase, orderSide:OrderSide, aumont:number):void {
         let operation = orderSide == OrderSide.BUY ? 'Comprando' : 'Vendendo';
         console.log(`${operation} ${aumont} BTC por ${candle.closePrice} USDT`);
-        // ApiHelper.getPrivateInstance().newOrder('BTCUSDT', orderSide, OrderType.MARKET, aumont).then(response => {
-        //     this._orders.push(response); //update order
-        //     console.table(this._orders); //log orders
-        // }).catch(e => console.log(e));
+        ApiHelper.getPrivateInstance().newOrder('BTCUSDT', orderSide, OrderType.MARKET, aumont).then(response => {
+            this._orders.push(response); //update order
+            console.table(this._orders); //log orders
+        }).catch(e => console.log(e));
     }
 }
-
-//GETTING THE WALLET DATA
-ApiHelper.getPrivateInstance().getWalletInfo().then(data => {
-    const wallet = new WalletBase(
-        WalletBase.walletLimit(process.env.WALLET_LIMIT!),
-        WalletBase.loadExternalWallet(data)
-    );    
-
-    const socket = new CryptoBot(`${process.env.WS_URI!}/btcbusd@kline_1m`, wallet);
-    socket.run();
-    socket.onCryptoListChange();
-})
