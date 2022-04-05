@@ -8,6 +8,10 @@ export abstract class Socket {
         this._apiAddress = address;
     }
 
+    set apiAddress(address:string) {
+        this._apiAddress = address;
+    }
+
     public run():void {
         this.start();
         this._ws.onopen = this.onOpenHandler.bind(this);

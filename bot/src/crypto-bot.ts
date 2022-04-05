@@ -4,10 +4,13 @@ import WebSocket from "ws";
 import { watch, readFile } from 'fs';
 import { Operation, WalletBase } from "./models/wallet-mode";
 import { ApiHelper } from "./libs/api";
-import { CandleType, KlineCandle } from "./types/candle-types";
 import { CandleBase } from './models/candle-base';
-import { OrderResponse, OrderSide, OrderType } from "./types/order-types";
 import { calcRSI } from "./libs/rsi-index";
+
+//TYPES
+import { CandleType, KlineCandle } from "./types/candle-types";
+import { OrderResponse, OrderSide, OrderType } from "./types/order-types";
+import { CoinListType } from './types/coin-list-types';
 
 export class CryptoBot extends Socket {
 
@@ -19,6 +22,9 @@ export class CryptoBot extends Socket {
     private _sellAumont:number;
     private _buyAumont:number;
     private _count:number;
+    private _configPath:string;
+    private _wsURL:string;
+    private _baseWSAddress:string;
 
     public constructor(apiAddress:string, wallet:WalletBase) {
         super(apiAddress);
@@ -29,24 +35,42 @@ export class CryptoBot extends Socket {
         this._orders = [];
 
         this._count = 0;
+        this._configPath = process.env.CONFIG_PATH!;
 
         this._sellAumont = parseFloat(process.env.SELL_AUMONT!);
         this._buyAumont = parseFloat(process.env.BUY_AUMONT!);
+
+        this._baseWSAddress = apiAddress;
+        
+        this.mountWSURL(this._baseWSAddress, 'coins.json', false);
 
         console.log(this._wallet.status);
     }
 
     public onCryptoListChange():void {
-        const configPath = process.env.CONFIG_PATH!;
-        watch(configPath, (_, filename) => {
-            if(filename && /coin/.test(filename)) {
-                readFile(`${configPath}/${filename}`, 'utf8', (err, dataString) => {
-                    if(err) throw err;        
-                    console.log(JSON.parse(dataString));
-                    this.restart();
-                });
-            }
+        watch(this._configPath, (_, filename) => {
+            if(filename && /coin/.test(filename)) this.mountWSURL(this._baseWSAddress, filename, false);
         });        
+    }
+
+    public mountWSURL(baseApiAddress:string, filename:string, restartBot:boolean):void {
+        const configPath = process.env.CONFIG_PATH!;
+        readFile(`${configPath}/${filename}`, 'utf8', (err, dataString) => {
+            if(err) throw err;        
+
+            const data:CoinListType = JSON.parse(dataString);
+            
+            if(data.cryptoCoins.length < 2) this._wsURL = `${baseApiAddress}ws/${data.cryptoCoins[0].toLowerCase()}${data.stableCoin.toLowerCase()}@kline_1m`;
+            else {
+                const coinsList:string[] = data.cryptoCoins.map(coin => `${coin.toLowerCase()}${data.stableCoin.toLowerCase()}@kline_1m`);
+                this._wsURL = `${baseApiAddress}stream?streams=${coinsList.join('/')}`;
+            }
+
+            this.apiAddress = this._wsURL;
+
+            console.log(this._wsURL);
+            if(restartBot) this.restart();
+        });
     }
 
     public onOpenHandler(_:WebSocket.Event):void {

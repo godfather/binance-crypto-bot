@@ -1,8 +1,8 @@
 {
     "cryptoCoins": [
-        "BTC", 
-        "ADA",
-        "ETH"
+        "BTC",
+        "ETH",
+        "LTC"
     ],
-    "stableCoin": "USDT"
+    "stableCoin": "BUSD"
 }
