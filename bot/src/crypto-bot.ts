@@ -18,6 +18,7 @@ export class CryptoBot extends Socket {
     private _orders:OrderResponse[];
     private _sellAumont:number;
     private _buyAumont:number;
+    private _count:number;
 
     public constructor(apiAddress:string, wallet:WalletBase) {
         super(apiAddress);
@@ -26,6 +27,8 @@ export class CryptoBot extends Socket {
         this._prevCandlePrice = 0;
         this._currentStartTime = 0;
         this._orders = [];
+
+        this._count = 0;
 
         this._sellAumont = parseFloat(process.env.SELL_AUMONT!);
         this._buyAumont = parseFloat(process.env.BUY_AUMONT!);
@@ -59,6 +62,10 @@ export class CryptoBot extends Socket {
     }
 
     public onMessageHandler(event:WebSocket.MessageEvent):void {
+        this._count++;
+        console.log('COUNT: ' + this._count);
+        console.log(JSON.parse(event.data.toString()));
+
         if(this._candles.length < 1) return; // stop here if no have candles
 
         this._prevCandlePrice = this._candles[this._candles.length -1].closePrice;      //Store the latest candle close price
@@ -90,9 +97,9 @@ export class CryptoBot extends Socket {
     private _createOrder(candle:CandleBase, orderSide:OrderSide, aumont:number):void {
         let operation = orderSide == OrderSide.BUY ? 'Comprando' : 'Vendendo';
         console.log(`${operation} ${aumont} BTC por ${candle.closePrice} USDT`);
-        ApiHelper.getPrivateInstance().newOrder('BTCUSDT', orderSide, OrderType.MARKET, aumont).then(response => {
-            this._orders.push(response); //update order
-            console.table(this._orders); //log orders
-        }).catch(e => console.log(e));
+        // ApiHelper.getPrivateInstance().newOrder('BTCUSDT', orderSide, OrderType.MARKET, aumont).then(response => {
+        //     this._orders.push(response); //update order
+        //     console.table(this._orders); //log orders
+        // }).catch(e => console.log(e));
     }
 }

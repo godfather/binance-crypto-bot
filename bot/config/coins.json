@@ -2,8 +2,7 @@
     "cryptoCoins": [
         "BTC", 
         "ADA",
-        "ETH",
-        "LTC"
+        "ETH"
     ],
     "stableCoin": "USDT"
 }
