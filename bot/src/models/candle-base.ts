@@ -1,14 +1,15 @@
 import { CandleType, KlineCandle } from "../types/candle-types";
 
 export class CandleBase {
+    private _symbol:string|null;
     private _closePrice:number;
     private _openTimeMS:number; //Kline Open time
     private _closeRate:number;
     private _currentClosePrice:string;
     private _priceDifference:string;
 
-    public constructor(data:CandleType|KlineCandle, prevClosePrice?:number) {
-        this._isKline(data) ? this._processKline(data) : this._processRestCandle(data);
+    public constructor(data:CandleType|KlineCandle, prevClosePrice?:number, symbol?:string) {
+        this._isKline(data) ? this._processKline(data) : this._processRestCandle(data, symbol);
         this._closeRate = this._calcCloseRate(prevClosePrice ||= 0);
         this._currentClosePrice = 'USD$ ' + this._closePrice.toFixed(2);
         this._priceDifference = this._calcPriceDifference(prevClosePrice);
@@ -20,6 +21,10 @@ export class CandleBase {
 
     get openTimeMS():number {
         return this._openTimeMS;
+    }
+
+    get symbol():string|null {
+        return this._symbol;
     }
 
 
@@ -36,11 +41,13 @@ export class CandleBase {
     private _processKline(data:KlineCandle):void {
         this._openTimeMS = data.k.t;
         this._closePrice = parseFloat(data.k.c);
+        this._symbol = data.s;
     }
 
-    private _processRestCandle(data:CandleType):void {
+    private _processRestCandle(data:CandleType, symbol?:string):void {
         this._openTimeMS = data[0] as number;
         this._closePrice = parseFloat(data[4] as string);
+        this._symbol = symbol || null;
     }
 
     private _isKline(data:CandleType|KlineCandle): data is KlineCandle {

@@ -5,7 +5,8 @@ export abstract class Socket {
     private _apiAddress:string;
 
     public constructor(address:string) {
-        this._apiAddress = address;
+        address;
+        // this._apiAddress = address;
     }
 
     set apiAddress(address:string) {

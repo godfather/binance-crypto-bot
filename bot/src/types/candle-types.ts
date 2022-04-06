@@ -1,3 +1,5 @@
+import { CandleBase } from "../models/candle-base";
+
 //SOCKET KLINE TYPE
 export interface KCandle {
     t:number;  // Kline start time
@@ -30,3 +32,14 @@ export interface KlineCandle {
 //REST CANDLE
 export type CandleType = (string|number)[];
 
+
+//BOT CANDLE COLLECTION
+export interface CandleCollection {
+    symbol:string;
+    candles:CandleBase[];
+}
+
+export interface CandlePrice {
+    symbol:string;
+    price:number;
+}
