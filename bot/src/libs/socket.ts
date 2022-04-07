@@ -4,10 +4,7 @@ export abstract class Socket {
     private _ws:WebSocket;
     private _apiAddress:string;
 
-    public constructor(address:string) {
-        address;
-        // this._apiAddress = address;
-    }
+    public constructor() {}
 
     set apiAddress(address:string) {
         this._apiAddress = address;
@@ -23,7 +20,6 @@ export abstract class Socket {
 
     public start():void {
         console.log('starting websocket');
-        console.log(this._apiAddress);
         this._ws = new WebSocket(this._apiAddress);
     }
 

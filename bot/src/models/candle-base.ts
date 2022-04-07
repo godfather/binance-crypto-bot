@@ -38,10 +38,10 @@ export class CandleBase {
         return 'USD$ ' + (this._closePrice - prevClosePrice).toFixed(2);
     }
 
-    private _processKline(data:KlineCandle):void {
-        this._openTimeMS = data.k.t;
-        this._closePrice = parseFloat(data.k.c);
-        this._symbol = data.s;
+    private _processKline(kline:KlineCandle):void {
+        this._openTimeMS = kline.data.k.t;
+        this._closePrice = parseFloat(kline.data.k.c);
+        this._symbol = kline.data.s;
     }
 
     private _processRestCandle(data:CandleType, symbol?:string):void {
@@ -51,6 +51,6 @@ export class CandleBase {
     }
 
     private _isKline(data:CandleType|KlineCandle): data is KlineCandle {
-        return (data as KlineCandle).s !== undefined;
+        return (data as KlineCandle).data !== undefined;
     }
 }

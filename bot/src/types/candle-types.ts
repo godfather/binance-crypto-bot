@@ -21,11 +21,21 @@ export interface KCandle {
     B:string;  // Ignore
 }
 
+// export interface KlineCandle {
+//     e:string; // Event type
+//     E:number; // Event time
+//     s:string; // Symbol
+//     k: KCandle;
+// }
+
 export interface KlineCandle {
-    e:string; // Event type
-    E:number; // Event time
-    s:string; // Symbol
-    k: KCandle;
+    stream:string;
+    data: {
+        e:string; // Event type
+        E:number; // Event time
+        s:string; // Symbol
+        k: KCandle;
+    };
 }
 
 
@@ -42,4 +52,9 @@ export interface CandleCollection {
 export interface CandlePrice {
     symbol:string;
     price:number;
+}
+
+export interface CandleStartTime {
+    symbol:string;
+    timestamp:number;
 }
