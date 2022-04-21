@@ -15,7 +15,7 @@ ApiHelper.getPrivateInstance().getWalletInfo().then(data => {
     // const socket = new CryptoBot(`wss://testnet.binance.vision/stream?streams=btcbusd@kline_1m/ethbusd@kline_1m/ltcbusd@kline_1m`, wallet);
     const socket = new CryptoBot(process.env.WS_URI!, wallet);
     socket.onCryptoListChange();
-})
+});
 
 // ----------- //
 

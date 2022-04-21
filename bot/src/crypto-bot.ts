@@ -6,6 +6,7 @@ import { Operation, WalletBase } from "./models/wallet-mode";
 import { ApiHelper } from "./libs/api";
 import { CandleBase } from './models/candle-base';
 import { calcRSI } from "./libs/rsi-index";
+import { State } from './libs/state';
 
 //TYPES
 import { CandleCollection, CandleType, KlineCandle, CandlePrice, CandleStartTime } from "./types/candle-types";
@@ -17,6 +18,7 @@ export class CryptoBot extends Socket {
     private _wallet:WalletBase
     private _candles:CandleCollection[];
     private _prevCandlePrice:CandlePrice[];
+    private _currentCandlePrice:CandlePrice[];
     private _currentStartTime:CandleStartTime[];
     private _orders:OrderResponse[];
     private _sellAumont:number;
@@ -27,15 +29,18 @@ export class CryptoBot extends Socket {
     private _baseWSAddress:string;
     private _coins:CoinListType;
     private _candlesIntialized:boolean;
+    private _state:State;
 
     public constructor(apiAddress:string, wallet:WalletBase) {
         super();
         this._wallet = wallet;
         this._candles = [];
         this._prevCandlePrice = [];
+        this._currentCandlePrice = [];
         this._currentStartTime = [];
         this._orders = [];
         this._candlesIntialized = false
+        this._state = State.getInstance();
 
         // this._count = 0;
         this._configPath = process.env.CONFIG_PATH!;
@@ -103,6 +108,9 @@ export class CryptoBot extends Socket {
 
         this._prevCandlePrice[pi].price = this._candles[ci].candles[this._candles[ci].candles.length -1].closePrice;   //Store the latest candle close price
         const candle = new CandleBase(klineData, this._prevCandlePrice[pi].price);                                     //convert into a Candle object
+
+        const eventkey:string = `${candle.openTimeMS}${candle.symbol}`;
+        this._state.dispatchEvent(eventkey);
     
         //PROCESS ONLY IF CURRENT CANDLE START TIME IS DIFFERENT OF THE CANDLE START TIME
         // console.log(`S: ${this._candles[ci].symbol} | CS: ${klineData.data.s} | TS: ${this._currentStartTime[ti].timestamp}`);
@@ -114,6 +122,14 @@ export class CryptoBot extends Socket {
 
         //BUY AND SELL ONLY IF THE NUMBER OF CANDLES IS BIGGER THAN 13
         if(this._candles[ci].candles.length > 13) {
+            this._state.addEventListener(eventkey, {
+                type:OrderSide.BUY,
+                symbol:candle.symbol!,
+                handler: () => { console.log(eventkey)}
+            });
+
+            return;
+
             const rsi:number = calcRSI(this._candles[ci].candles.map((candle:CandleBase) => candle.closePrice)); //calculates the RSI 
             console.log(`${this._candles[ci].symbol}: ${rsi}`); //print the current RSI
 
@@ -145,14 +161,14 @@ export class CryptoBot extends Socket {
         const collectionIndex = this._candles.findIndex(candle => candle.symbol === currentCandle.symbol);
         if(collectionIndex === -1) this._candles.push({ symbol:currentCandle.symbol!, candles:[currentCandle] });
         else this._candles[collectionIndex].candles.push(currentCandle);
-        this._setPreviousCandlePrice(currentCandle.symbol!, currentCandle.closePrice);
+        this._setCandlePrice(currentCandle.symbol!, currentCandle.closePrice, this._prevCandlePrice);
         this._setCurrentStartTime(currentCandle.symbol!, currentCandle.openTimeMS);
     }
 
-    private _setPreviousCandlePrice(symbol:string, price:number):void {
-        const priceIndex = this._prevCandlePrice.findIndex(priceItem => priceItem.symbol === symbol);
-        if(priceIndex === -1) this._prevCandlePrice.push({ symbol:symbol, price:price });
-        else this._prevCandlePrice[priceIndex].price = price;
+    private _setCandlePrice(symbol:string, price:number, candlePriceCollection:CandlePrice[]):void {
+        const priceIndex = candlePriceCollection.findIndex(priceItem => priceItem.symbol === symbol);
+        if(priceIndex === -1) candlePriceCollection.push({ symbol:symbol, price:price });
+        else candlePriceCollection[priceIndex].price = price;
     }
 
     private _setCurrentStartTime(symbol:string, timestamp:number):void {
