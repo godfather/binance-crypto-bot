@@ -39,8 +39,9 @@ export class State {
         if(!this._events.has(eventKey)) return;
 
         const events = new Map(this._events);
-        events.get(eventKey)!.target.handler();
-        events.delete(eventKey); //delete the event only on the handler callback
+        const event = events.get(eventKey)!;
+        event.target.handler();
+        events.delete(event.key); //delete the event only on the handler callback
         this._events = new Map(events);
     }
 }

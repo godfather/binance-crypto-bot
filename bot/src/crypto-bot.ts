@@ -23,7 +23,6 @@ export class CryptoBot extends Socket {
     private _orders:OrderResponse[];
     private _sellAumont:number;
     private _buyAumont:number;
-    // private _count:number;
     private _configPath:string;
     private _wsURL:string;
     private _baseWSAddress:string;
@@ -41,10 +40,7 @@ export class CryptoBot extends Socket {
         this._orders = [];
         this._candlesIntialized = false
         this._state = State.getInstance();
-
-        // this._count = 0;
         this._configPath = process.env.CONFIG_PATH!;
-
         this._sellAumont = parseFloat(process.env.SELL_AUMONT!);
         this._buyAumont = parseFloat(process.env.BUY_AUMONT!);
 
@@ -88,21 +84,14 @@ export class CryptoBot extends Socket {
     }
 
     public onMessageHandler(event:WebSocket.MessageEvent):void {
-        // this._count++;
-        // console.log('COUNT: ' + this._count);
-
         if(!this._candlesIntialized) return; //not start the process if the candles collection isnt initialized
 
         const klineData = JSON.parse(event.data.toString()) as unknown as KlineCandle;  //parse the current kline data into json 
         const ci = this._candles.findIndex(candle => candle.symbol === klineData.data.s); //get the candle collection index
         const pi = this._prevCandlePrice.findIndex(price => price.symbol === klineData.data.s); //get the prevCandlePrice index
         const ti = this._currentStartTime.findIndex(startTime => startTime.symbol === klineData.data.s); //get the currentStartTime index
-
-        // console.log(JSON.parse(event.data.toString()).data.s + " CI: " + this._candles[ci].candles.length);
-        // return;
         
-        console.log(this._candles[ci].symbol, klineData.data.s);
-        // return;
+        console.log(this._candles[ci].symbol, klineData.data.s, klineData.data.k.c);
 
         if(ci > -1 && this._candles[ci].candles.length < 1) return; // stop here if no have candles
 
@@ -113,7 +102,6 @@ export class CryptoBot extends Socket {
         this._state.dispatchEvent(eventkey);
     
         //PROCESS ONLY IF CURRENT CANDLE START TIME IS DIFFERENT OF THE CANDLE START TIME
-        // console.log(`S: ${this._candles[ci].symbol} | CS: ${klineData.data.s} | TS: ${this._currentStartTime[ti].timestamp}`);
         if(this._currentStartTime[ti].timestamp == candle.openTimeMS) return;
 
         if(this._candles[ci].candles.length > 15) this._candles[ci].candles.shift(); // if has more than 15 candles remove one
@@ -125,10 +113,12 @@ export class CryptoBot extends Socket {
             this._state.addEventListener(eventkey, {
                 type:OrderSide.BUY,
                 symbol:candle.symbol!,
-                handler: () => { console.log(eventkey)}
+                handler: (price:number) => { 
+                    console.log(`EVENT: ${eventkey} SIZE: ${this._state.stateSize}`);
+                    console.log(`EVENT: ${eventkey} PRICE: ${price} CURRENT-PRICE: ${candle.closePrice}`);                    
+                }
             });
 
-            return;
 
             const rsi:number = calcRSI(this._candles[ci].candles.map((candle:CandleBase) => candle.closePrice)); //calculates the RSI 
             console.log(`${this._candles[ci].symbol}: ${rsi}`); //print the current RSI
