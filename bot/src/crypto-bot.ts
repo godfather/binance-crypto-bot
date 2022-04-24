@@ -121,9 +121,9 @@ export class CryptoBot extends Socket {
 
     private _createOrder(candle:CandleBase, orderSide:OrderSide, aumont:number):void {
         let operation = orderSide == OrderSide.BUY ? 'Comprando' : 'Vendendo';
-        console.log(`${operation} ${aumont} ${candle.symbol} por ${candle.closePrice} USDT`);
+        console.log(`${operation} ${aumont} ${candle.symbol} por ${candle.closePrice} ${this._coins.stableCoin}`);
 
-        // ApiHelper.getPrivateInstance().newOrder('BTCUSDT', orderSide, OrderType.MARKET, aumont).then(response => {
+        // ApiHelper.getPrivateInstance().newOrder(candle.symbol, orderSide, OrderType.MARKET, aumont).then(response => {
         //     this._orders.push(response); //update order
         //     console.table(this._orders); //log orders
         // }).catch(e => console.log(e));
