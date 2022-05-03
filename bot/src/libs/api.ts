@@ -46,8 +46,8 @@ export class ApiHelper extends BaseHttpClient {
     //MAKET ONLY
     public newOrder(symbol:string, side:OrderSide, type:OrderType, quantity:number) {
 
-        console.log(process.env.API_SECRET_KEY);
-        console.log(process.env.API_KEY);
+        // console.log(process.env.API_SECRET_KEY);
+        // console.log(process.env.API_KEY);
 
         const timestamp = Date.now();
         const params = { symbol, side, type, quantity, timestamp };

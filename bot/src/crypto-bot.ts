@@ -1,11 +1,19 @@
+//VENDORS
 import 'dotenv/config';
-import { Socket } from "./libs/socket";
 import WebSocket from "ws";
 import { watch, readFile } from 'fs';
-import { Operation, WalletBase } from "./models/wallet-mode";
+
+//LIBS
+import { Socket } from "./libs/socket";
 import { ApiHelper } from "./libs/api";
-import { CandleBase } from './models/candle-base';
 import { calcRSI } from "./libs/rsi-index";
+import { OrderHelper } from './libs/order-helper';
+import { conn } from './libs/mongo-connection';
+
+//MODELS
+import { CandleBase } from './models/candle-base';
+import { Operation, WalletBase } from "./models/wallet-mode";
+import Order, { IOrder } from './models/orders';
 
 //TYPES
 import { CandleCollection, CandleType, KlineCandle, CandlePrice, CandleStartTime } from "./types/candle-types";
@@ -14,7 +22,7 @@ import { CoinListType } from './types/coin-list-types';
 
 export class CryptoBot extends Socket {
 
-    private _wallet:WalletBase
+    private _wallet:WalletBase|null;
     private _candles:CandleCollection[];
     private _prevCandlePrice:CandlePrice[];
     private _currentCandlePrice:CandlePrice[];
@@ -28,7 +36,7 @@ export class CryptoBot extends Socket {
     private _coins:CoinListType;
     private _candlesIntialized:boolean;
 
-    public constructor(apiAddress:string, wallet:WalletBase) {
+    public constructor(apiAddress:string, wallet:WalletBase|null) {
         super();
         this._wallet = wallet;
         this._candles = [];
@@ -45,7 +53,7 @@ export class CryptoBot extends Socket {
         
         this.mountWSURL(this._baseWSAddress, 'coins.json', false);
 
-        console.log(this._wallet.status);
+        console.log(this._wallet!.status);
     }
 
     public onCryptoListChange():void {
@@ -88,7 +96,7 @@ export class CryptoBot extends Socket {
         const pi = this._prevCandlePrice.findIndex(price => price.symbol === klineData.data.s);          //get the prevCandlePrice index
         const ti = this._currentStartTime.findIndex(startTime => startTime.symbol === klineData.data.s); //get the currentStartTime index
         
-        console.log(this._candles[ci].symbol, klineData.data.s, parseFloat(klineData.data.k.c).toFixed(2));
+        console.log(this._candles[ci].symbol, `USD$ ${parseFloat(klineData.data.k.c).toFixed(2)}`);
 
         if(ci > -1 && this._candles[ci].candles.length < 1) return; // stop here if no have candles
 
@@ -105,13 +113,13 @@ export class CryptoBot extends Socket {
         //BUY AND SELL ONLY IF THE NUMBER OF CANDLES IS BIGGER THAN 13
         if(this._candles[ci].candles.length > 13) {
             const rsi:number = calcRSI(this._candles[ci].candles.map((candle:CandleBase) => candle.closePrice)); //calculates the RSI 
-            console.log(`${this._candles[ci].symbol}: ${rsi}`); //print the current RSI
+            console.log(`${this._candles[ci].symbol} RSI: ${rsi}`); //print the current RSI
 
             //BUY IF RSI OVERMATCH 70
-            if(rsi > 70 && rsi < 95) this._createOrder(candle, OrderSide.SELL, this._sellAumont);
+            // if(rsi > 70 && rsi < 95) this._createOrder(candle, OrderSide.SELL);
 
             //BUY IF RSI IS ABOVE THE 30
-            if(rsi < 30 && rsi > 5) this._createOrder(candle, OrderSide.BUY, this._buyAumont);
+            if(rsi < 60 && rsi > 5) this._createOrder(candle, OrderSide.BUY);
 
             //print candles
             console.table(this._candles[ci].candles);
@@ -119,14 +127,39 @@ export class CryptoBot extends Socket {
         }
     }
 
-    private _createOrder(candle:CandleBase, orderSide:OrderSide, aumont:number):void {
+    private _createOrder(candle:CandleBase, orderSide:OrderSide):void {
         let operation = orderSide == OrderSide.BUY ? 'Comprando' : 'Vendendo';
-        console.log(`${operation} ${aumont} ${candle.symbol} por ${candle.closePrice} ${this._coins.stableCoin}`);
+
+        const ordersHelper = OrderHelper.getInstance();
+        ordersHelper.init(100, this._coins.cryptoCoins);
+        if(orderSide == OrderSide.BUY) {
+            ordersHelper.getAumont(candle.symbol!.substring(0,3), candle.closePrice).then(aumont => {
+                const fixedAumont:number = parseFloat((aumont * 1000).toFixed(8)) ; //remover a multiplicação
+                const stablePrice:number = (fixedAumont * candle.closePrice);
+                console.log(`${operation} ${fixedAumont} ${candle.symbol!.substring(0,3)} por ${stablePrice} ${this._coins.stableCoin}`);
+                ApiHelper.getPrivateInstance().newOrder(candle.symbol!, orderSide, OrderType.MARKET, fixedAumont).then(response => {
+                    ordersHelper.decreseAumont(candle.symbol!.substring(0,3), (aumont * candle.closePrice));
+                    this._persistOrder(response);
+                }).catch(e => console.log(e));
+            });
+        }
+    
 
         // ApiHelper.getPrivateInstance().newOrder(candle.symbol, orderSide, OrderType.MARKET, aumont).then(response => {
         //     this._orders.push(response); //update order
         //     console.table(this._orders); //log orders
         // }).catch(e => console.log(e));
+    }
+
+    private _persistOrder(orderResponse:OrderResponse) {
+        conn.then(_ => {
+            Order.create(orderResponse).then(order => {
+                this._orders.push(orderResponse); //update order
+                console.log(`NEW ORDER ${order._id} SAVED`);
+                console.table(this._orders); //log orders
+            });
+        }).catch(err => console.log(err));
+
     }
 
     private _pushCandleToCollection(currentCandle:CandleBase):void {

@@ -20,7 +20,13 @@ export enum OrderType {
 }
 
 export enum OrderStatus {
-    FILLED = "FILLED"
+    FILLED = "FILLED",
+    NEW = "NEW",
+    PARTIALLY_FILLED = "PARTIALLY_FILLED",
+    CANCELED = "CANCELED",
+    PENDING_CANCEL = "PENDING_CANCEL",
+    REJECTED = "REJECTED",
+    EXPIRED = "EXPIRED"
 }
 
 export interface OrderFill {
