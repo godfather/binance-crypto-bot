@@ -1,5 +1,6 @@
 import mongoose, { Document, Decimal128 } from "mongoose";
 import { OrderResponse, OrderStatus, OrderTimeInForce, OrderType, OrderSide } from "../types/order-types";
+import { conn } from "../libs/mongo-connection";
 
 export interface IOrder extends Document, OrderResponse {}
 
@@ -89,4 +90,4 @@ const orderSchema = new mongoose.Schema({
     ]
 });
 
-export default  mongoose.model<IOrder>('Order', orderSchema);
+export default conn.model<IOrder>('Order', orderSchema);

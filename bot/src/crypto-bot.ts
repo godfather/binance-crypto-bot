@@ -152,14 +152,11 @@ export class CryptoBot extends Socket {
     }
 
     private _persistOrder(orderResponse:OrderResponse) {
-        conn.then(_ => {
-            Order.create(orderResponse).then(order => {
-                this._orders.push(orderResponse); //update order
-                console.log(`NEW ORDER ${order._id} SAVED`);
-                console.table(this._orders); //log orders
-            });
-        }).catch(err => console.log(err));
-
+        Order.create(orderResponse).then(order => {
+            this._orders.push(orderResponse); //update order
+            console.log(`NEW ORDER ${order._id} SAVED`);
+            console.table(this._orders); //log orders
+        });
     }
 
     private _pushCandleToCollection(currentCandle:CandleBase):void {

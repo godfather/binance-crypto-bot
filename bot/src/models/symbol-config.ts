@@ -1,4 +1,5 @@
 import mongoose, { Decimal128, Document } from "mongoose";
+import { conn } from "../libs/mongo-connection";
 
 export interface ISymbol extends Document {
     symbol:string;
@@ -18,4 +19,4 @@ const symbolSchema = new mongoose.Schema({
     }
 });
 
-export default mongoose.model<ISymbol>('SymbolConfig', symbolSchema);
+export default conn.model<ISymbol>('SymbolConfig', symbolSchema);
