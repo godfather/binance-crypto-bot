@@ -1,8 +1,11 @@
 import { conn } from './libs/mongo-connection';
 import Order, { IOrder } from './models/orders';
 import { OrderResponse } from './types/order-types';
-import { Decimal128 } from 'mongoose';
+import { Decimal128 } from 'mongodb';
 import { OrderHelper } from './libs/order-helper';
+import { ApiHelper } from './libs/api';
+import Symbol, { ISymbol } from './models/symbol-config';
+import { EnumExangeInfoFilterType } from './types/info-types';
 
 
 const data = {
@@ -61,10 +64,63 @@ const data = {
 const main = async (callback:Function) => callback();
 
 main(async () => {
-    await conn;
-    const order = await Order.create(data);
-    console.log(order);
+    // await conn;
+    // const order = await Order.create(data);
+    // console.log(order);
     
+    const s = Symbol.find({});
+
+    const api = s.then(smb => {
+        return ApiHelper.getInstance().getExchangeInfo(smb);
+    })
+
+    const c = api.then(result => {
+      return new Promise<ISymbol[]>((resolve, reject) => { 
+        const total = result.symbols.length;
+        let count = 0;
+        const symbols:ISymbol[] = [];
+
+        result.symbols.forEach(symbol => {
+            const lotSize = symbol.filters.find(filter => filter.filterType == EnumExangeInfoFilterType.LOT_SIZE)!;
+            const minNotional = symbol.filters.find(filter => filter.filterType == EnumExangeInfoFilterType.MIN_NOTIONAL)!;
+
+
+            Symbol.findOneAndUpdate(
+              { symbol:symbol.baseAsset }, 
+              { $set:{ "filters.minQty": lotSize.minQty!, "filters.minNotional":minNotional.minNotional }}
+            ).then(data => {
+              count++;
+              console.log('COUNT: ' + count);
+              symbols.push(data as ISymbol);
+              if(count === total) return resolve(symbols);
+            }).catch(err => reject(err));
+        });
+      });
+    })
+
+
+    c.then((data) => {
+      console.log(data);
+    }).catch(err => console.error(err));
+
+    // const result = await ApiHelper.getInstance().getExchangeInfo(s);
+
+    // result.symbols.forEach(symbol => {
+    //     const lotSize = symbol.filters.find(filter => filter.filterType == EnumExangeInfoFilterType.LOT_SIZE)!;
+    //     const minNotional = symbol.filters.find(filter => filter.filterType == EnumExangeInfoFilterType.MIN_NOTIONAL)!;
+
+    //     console.log(lotSize);
+
+    //     Symbol.findOneAndUpdate(
+    //       { symbol:symbol.baseAsset }, 
+    //       { $set:{ "filters.minQty": lotSize.minQty!, "filters.minNotional":minNotional.minNotional }}
+    //     ).then(result => console.table(result)).catch(err => console.error(err));
+
+    // });
+
+
+    
+
 
     // const ordersHelper = OrderHelper.getInstance();
     // ordersHelper.init(101, [ "BTC","ETH","LTC" ]);

@@ -2,9 +2,11 @@ import 'dotenv/config';
 import { BaseHttpClient } from "./base-http-client";
 import { CandleType } from "../types/candle-types";
 import { Wallet } from '../types/wallet-types';
-import { OrderType, OrderSide, OrderResponse } from '../types/order-types';
+import { OrderType, OrderSide, OrderResponse, OrderParams } from '../types/order-types';
 import crypto from 'crypto';
 import qs from 'qs';
+import { ISymbol } from '../models/symbol-config';
+import { IExchangeInfo } from '../types/info-types';
 
 
 export class ApiHelper extends BaseHttpClient {
@@ -43,18 +45,24 @@ export class ApiHelper extends BaseHttpClient {
         });
     }
 
-    //MAKET ONLY
+    //MARKET ONLY
     public newOrder(symbol:string, side:OrderSide, type:OrderType, quantity:number) {
-
-        // console.log(process.env.API_SECRET_KEY);
-        // console.log(process.env.API_KEY);
-
         const timestamp = Date.now();
-        const params = { symbol, side, type, quantity, timestamp };
+        const params:OrderParams = { symbol, side, type, timestamp };
+        params[side === OrderSide.BUY ? 'quoteOrderQty' : 'quantity'] = quantity;
+
         const signature = this._generateSignature(qs.stringify(params));
-        // console.log(params);
+        console.log(params);
         return this.instance.post<unknown, OrderResponse>('/order', null, {
             params: {...params, signature},
+        });
+    }
+
+    public getExchangeInfo(symbols:ISymbol[]) {
+        const symbolsList = symbols.map(coin => coin.symbol + coin.stable);
+        console.log(`Getting excange info for symbols ${symbolsList}`);
+        return this.instance.get<unknown, IExchangeInfo>('/exchangeInfo', {
+            params: { symbols:JSON.stringify(symbolsList) },
         });
     }
 

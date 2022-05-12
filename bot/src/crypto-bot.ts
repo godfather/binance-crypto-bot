@@ -14,11 +14,15 @@ import { conn } from './libs/mongo-connection';
 import { CandleBase } from './models/candle-base';
 import { Operation, WalletBase } from "./models/wallet-mode";
 import Order, { IOrder } from './models/orders';
+import Symbol, { ISymbol } from './models/symbol-config';
 
 //TYPES
 import { CandleCollection, CandleType, KlineCandle, CandlePrice, CandleStartTime } from "./types/candle-types";
 import { OrderResponse, OrderSide, OrderType } from "./types/order-types";
 import { CoinListType } from './types/coin-list-types';
+import { EnumExangeInfoFilterType } from './types/info-types';
+import { resolve } from 'path';
+import { rejects } from 'assert';
 
 export class CryptoBot extends Socket {
 
@@ -33,7 +37,7 @@ export class CryptoBot extends Socket {
     private _configPath:string;
     private _wsURL:string;
     private _baseWSAddress:string;
-    private _coins:CoinListType;
+    private _coins:ISymbol[];
     private _candlesIntialized:boolean;
 
     public constructor(apiAddress:string, wallet:WalletBase|null) {
@@ -51,36 +55,52 @@ export class CryptoBot extends Socket {
 
         this._baseWSAddress = apiAddress;
         
-        this.mountWSURL(this._baseWSAddress, 'coins.json', false);
+        this.mountWSURL(this._baseWSAddress, false);
 
         console.log(this._wallet!.status);
     }
 
     public onCryptoListChange():void {
         watch(this._configPath, (_, filename) => {
-            if(filename && /coin/.test(filename)) this.mountWSURL(this._baseWSAddress, filename, false);
+            if(filename && /coin/.test(filename)) this.mountWSURL(this._baseWSAddress, false);
         });        
     }
 
-    public mountWSURL(baseApiAddress:string, filename:string, restartBot:boolean):void {
-        const configPath = process.env.CONFIG_PATH!;
-        readFile(`${configPath}/${filename}`, 'utf8', (err, dataString) => {
-            if(err) throw err;        
+    public mountWSURL(baseApiAddress:string, restartBot:boolean):void {
+        Symbol.find({}).then(symbols => {
+            this._coins = symbols;
 
-            this._coins = JSON.parse(dataString);
+            this._updateSymbolExchangeInfo().then(_ => {
+                const coinsList:string[] = this._coins.map(coin => `${coin.symbol.toLowerCase()}${coin.stable.toLowerCase()}@kline_1m`);
+                this.apiAddress = this._wsURL = `${baseApiAddress}stream?streams=${coinsList.join('/')}`;
+    
+                console.log(this._wsURL);
+                if(!restartBot) this.run();
+                else {
+                    this._initializeCandles();
+                    this.restart();
+                }    
+            });
+        }).catch(err => console.log(err));
+
+        // const configPath = process.env.CONFIG_PATH!;
+        // readFile(`${configPath}/${filename}`, 'utf8', (err, dataString) => {
+        //     if(err) throw err;        
+
+        //     this._coins = JSON.parse(dataString);
             
-            const coinsList:string[] = this._coins.cryptoCoins.map(coin => `${coin.toLowerCase()}${this._coins.stableCoin.toLowerCase()}@kline_1m`);
-            this._wsURL = `${baseApiAddress}stream?streams=${coinsList.join('/')}`;
+        //     const coinsList:string[] = this._coins.cryptoCoins.map(coin => `${coin.toLowerCase()}${this._coins.stableCoin.toLowerCase()}@kline_1m`);
+        //     this._wsURL = `${baseApiAddress}stream?streams=${coinsList.join('/')}`;
 
-            this.apiAddress = this._wsURL;
+        //     this.apiAddress = this._wsURL;
 
-            console.log(this._wsURL);
-            if(!restartBot) this.run();
-            else {
-                this._initializeCandles();
-                this.restart();
-            }
-        });
+        //     console.log(this._wsURL);
+        //     if(!restartBot) this.run();
+        //     else {
+        //         this._initializeCandles();
+        //         this.restart();
+        //     }
+        // });
     }
 
     public onOpenHandler(_:WebSocket.Event):void {
@@ -110,6 +130,8 @@ export class CryptoBot extends Socket {
         this._candles[ci].candles.push(candle);                                      // push the current candle to candles array
         this._currentStartTime[ti].timestamp = candle.openTimeMS;                    // update the current start time
 
+        this._updateSymbolExchangeInfo().then(_ => console.log('LOT_SIZE && MIN_NOTIONAL UPDATED.')).catch(err => console.error(err));
+
         //BUY AND SELL ONLY IF THE NUMBER OF CANDLES IS BIGGER THAN 13
         if(this._candles[ci].candles.length > 13) {
             const rsi:number = calcRSI(this._candles[ci].candles.map((candle:CandleBase) => candle.closePrice)); //calculates the RSI 
@@ -128,18 +150,40 @@ export class CryptoBot extends Socket {
     }
 
     private _createOrder(candle:CandleBase, orderSide:OrderSide):void {
+        //choose the correct operation
         let operation = orderSide == OrderSide.BUY ? 'Comprando' : 'Vendendo';
 
+        //get the current coin on coins collection
+        const coin = this._coins.find(scoin => scoin.symbol === candle.symbol!.substring(0,3))!;
+        
+        //initialize the orders helper – maybe we can move this helpers to another place
         const ordersHelper = OrderHelper.getInstance();
-        ordersHelper.init(100, this._coins.cryptoCoins);
+        ordersHelper.init(this._coins);
+
+        //check if it's a order to buy 
         if(orderSide == OrderSide.BUY) {
-            ordersHelper.getAumont(candle.symbol!.substring(0,3), candle.closePrice).then(aumont => {
-                const fixedAumont:number = parseFloat((aumont * 1000).toFixed(8)) ; //remover a multiplicação
+
+            //get the aumont to buy based on the candle current price
+            ordersHelper.getAumont(candle.symbol!.substring(0,3), candle.closePrice, orderSide).then(aumont => {
+                // fix the aumont precision and get the aumont on stable coin
+                const fixedAumont:number = parseFloat((coin.symbol !== 'BTC' ? aumont : (aumont * 1000)).toFixed(8)) ; //remover a multiplicação
                 const stablePrice:number = (fixedAumont * candle.closePrice);
-                console.log(`${operation} ${fixedAumont} ${candle.symbol!.substring(0,3)} por ${stablePrice} ${this._coins.stableCoin}`);
+                
+                //log the order on console
+                console.log(`${operation} ${fixedAumont} ${candle.symbol!.substring(0,3)} por ${stablePrice} ${coin.stable}`);
+
+                //make a request to binance api
                 ApiHelper.getPrivateInstance().newOrder(candle.symbol!, orderSide, OrderType.MARKET, fixedAumont).then(response => {
-                    ordersHelper.decreseAumont(candle.symbol!.substring(0,3), (aumont * candle.closePrice));
+                    //persis the order on db
+                    console.log(response);
                     this._persistOrder(response);
+
+                    //decreate the symbol aumont and save it on db
+                    ordersHelper.decreseAumont(candle.symbol!, stablePrice).then(_ => {
+                        //update the coins collection with the new values
+                        Symbol.find({}).then(symbols => this._coins = symbols);
+                    });
+
                 }).catch(e => console.log(e));
             });
         }
@@ -186,8 +230,8 @@ export class CryptoBot extends Socket {
         let initalizedCount:number = 0;
 
         //LOADING FROM BINANCE THE LATEST CANDLES AND CONVERTING INTO CANDLES OBJECT ARRAY
-        this._coins.cryptoCoins.forEach(symbol => {
-            const symbolCoin = symbol+this._coins.stableCoin;
+        this._coins.forEach(coin => {
+            const symbolCoin = coin.symbol+coin.stable;
             ApiHelper.getInstance().getLatestCandles(symbolCoin).then(response => {
                 response.forEach((candle:CandleType) => {
                     const currentCandle = new CandleBase(candle, 0, symbolCoin);
@@ -196,10 +240,41 @@ export class CryptoBot extends Socket {
                
                 initalizedCount++;
 
-                if(initalizedCount ===  this._coins.cryptoCoins.length) {
+                if(initalizedCount === this._coins.length) {
                     this._candlesIntialized = true;
                     console.log('Candles Initilized…');
                 }
+            })
+        });
+    }
+
+    private _updateSymbolExchangeInfo():Promise<ISymbol[]> {
+        const exchangeInfo = ApiHelper.getInstance().getExchangeInfo(this._coins);
+        
+        return new Promise((resolve, reject) => {
+            exchangeInfo.then(result => {
+                let count = 0;
+                const total = result.symbols.length;
+                
+                result.symbols.forEach(symbol => {
+                    const lotSize = symbol.filters.find(filter => filter.filterType == EnumExangeInfoFilterType.LOT_SIZE)!;
+                    const minNotional = symbol.filters.find(filter => filter.filterType == EnumExangeInfoFilterType.MIN_NOTIONAL)!;
+    
+                    Symbol.findOneAndUpdate(
+                      { symbol:symbol.baseAsset }, 
+                      { $set:{ "filters.minQty": lotSize.minQty!, "filters.minNotional":minNotional.minNotional }},
+                      { new:true }
+                    ).then(coin => {
+                        count++;
+                        console.log(`UPDATE COIN: ${coin?.symbol} COUNT: ${count} FROM ${total}`);
+
+                        const coinIndex = this._coins.findIndex( coin => coin.symbol == coin?.symbol );
+                        if(coinIndex > -1) this._coins[coinIndex]! = coin as ISymbol;
+                        else this._coins.push(coin as ISymbol);
+
+                        if(count === total) return resolve(this._coins);
+                    }).catch(err => reject(err));        
+                });    
             })
         });
     }

@@ -1,4 +1,4 @@
-import SymbolConfig from '../models/symbol-config';
+import Symbol from '../models/symbol-config';
 
 export default class SymbolCrud {
     private static _instance:SymbolCrud;
@@ -11,16 +11,16 @@ export default class SymbolCrud {
         return this._instance;
     }
 
-    public async create(symbol:string, aumont:number) {
-        const exists = await SymbolConfig.findOne({ symbol:symbol });
+    public async create(symbol:string, aumont:number, stable='USDT') {
+        const exists = await Symbol.findOne({ symbol:symbol });
         if(exists) return console.log(`${symbol} Can't be created, the symbol areeady exists!`)        
         
-        const result = await SymbolConfig.create({symbol, aumont});
+        const result = await Symbol.create({symbol, aumont, stable});
         return console.log(`${result._id} SAVED`);       
     }
 
     public async update(symbol:string, aumont:number) {
-        const result = await SymbolConfig.findOneAndUpdate(
+        const result = await Symbol.findOneAndUpdate(
             { symbol:symbol }, 
             { aumont:aumont }, 
             { new:true, upsert:true}
@@ -30,12 +30,12 @@ export default class SymbolCrud {
     }
 
     public async delete(symbol:string) {
-        const result = await SymbolConfig.deleteOne({symbol});
+        const result = await Symbol.deleteOne({symbol});
         console.log(`${result.deletedCount} DELETED`);
     }
 
     public async list() {
-        const result = await SymbolConfig.find({});
+        const result = await Symbol.find({}, { projection:{ __v:0 }});
         const data = result.map(doc => doc.toObject());
         console.table(data);
     }

@@ -7,6 +7,7 @@ interface SymbolOptions {
     operation:string;
     symbol:string;
     aumont:number;
+    stable:string;
 }
 
 const cli = new Command();
@@ -16,11 +17,13 @@ cli.command('symbol')
     .requiredOption('-o, --operation <string>', 'the operation, eg: c = create, r = read, u = update, d = delete')
     .option('-s, --symbol <string>', 'symbol string, eg: BTC')
     .option('-a, --aumont <decimal>', 'aumont, eg: 10.33')
+    .option('-S, --stable <string>', 'the stable coin used on operation')
     .action(async (options:SymbolOptions) => {
         if(options.operation === 'r')  await SymbolCrud.getInstance().list()
         
 
         if(options.operation === 'c' && (options.symbol && options.aumont)) {
+            const stable = options.stable || 'USDT'
             await SymbolCrud.getInstance().create(options.symbol, options.aumont);
         }
 

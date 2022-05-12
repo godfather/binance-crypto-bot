@@ -53,3 +53,12 @@ export interface OrderResponse {
     side:OrderSide;
     fills: OrderFill[];
 }
+
+export type OrderParams = {
+    symbol:string;
+    side:OrderSide;
+    type:OrderType;
+    quantity?:number;
+    quoteOrderQty?:number;
+    timestamp:number;
+}
