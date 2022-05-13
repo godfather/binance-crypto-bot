@@ -91,25 +91,6 @@ export class CryptoBot extends Socket {
                 }    
             });
         }).catch(err => console.log(err));
-
-        // const configPath = process.env.CONFIG_PATH!;
-        // readFile(`${configPath}/${filename}`, 'utf8', (err, dataString) => {
-        //     if(err) throw err;        
-
-        //     this._coins = JSON.parse(dataString);
-            
-        //     const coinsList:string[] = this._coins.cryptoCoins.map(coin => `${coin.toLowerCase()}${this._coins.stableCoin.toLowerCase()}@kline_1m`);
-        //     this._wsURL = `${baseApiAddress}stream?streams=${coinsList.join('/')}`;
-
-        //     this.apiAddress = this._wsURL;
-
-        //     console.log(this._wsURL);
-        //     if(!restartBot) this.run();
-        //     else {
-        //         this._initializeCandles();
-        //         this.restart();
-        //     }
-        // });
     }
 
     public onOpenHandler(_:WebSocket.Event):void {
@@ -214,39 +195,6 @@ export class CryptoBot extends Socket {
                 });
             });
         }
-
-            // console.log(balance);
-
-            // //get the aumont to buy based on the candle current price
-            // ordersHelper.getAumont(candle.symbol!.substring(0,3), candle.closePrice, orderSide).then(aumont => {
-            //     // fix the aumont precision and get the aumont on stable coin
-            //     const fixedAumont:number = parseFloat((coin.symbol !== 'BTC' ? aumont : (aumont * 1000)).toFixed(8)) ; //remover a multiplicação
-            //     const stablePrice:number = (fixedAumont * candle.closePrice);
-                
-            //     //log the order on console
-            //     console.log(`${operation} ${fixedAumont} ${candle.symbol!.substring(0,3)} por ${stablePrice} ${coin.stable}`);
-
-            //     //make a request to binance api
-            //     ApiHelper.getPrivateInstance().newOrder(candle.symbol!, orderSide, OrderType.MARKET, fixedAumont).then(response => {
-            //         //persis the order on db
-            //         console.log(response);
-            //         this._persistOrder(response);
-
-            //         //decreate the symbol aumont and save it on db
-            //         ordersHelper.decreseAumont(candle.symbol!, stablePrice).then(_ => {
-            //             //update the coins collection with the new values
-            //             Symbol.find({}).then(symbols => this._coins = symbols);
-            //         });
-
-            //     }).catch(e => console.log(e));
-            // });
-        // }
-    
-
-        // ApiHelper.getPrivateInstance().newOrder(candle.symbol, orderSide, OrderType.MARKET, aumont).then(response => {
-        //     this._orders.push(response); //update order
-        //     console.table(this._orders); //log orders
-        // }).catch(e => console.log(e));
     }
 
     private _persistOrder(orderResponse:OrderResponse) {
