@@ -4,6 +4,10 @@ import { conn } from "../libs/mongo-connection";
 
 export interface IOrder extends Document, OrderResponse {}
 
+const convertToNumber = (value:any) => {
+    return typeof value !== 'undefined' ? parseFloat(value.toString()) : value;
+}
+
 const orderSchema = new mongoose.Schema({
     symbol: {
         type:String,
@@ -29,19 +33,23 @@ const orderSchema = new mongoose.Schema({
     },
     price: {
         type:String,
-        required:true
+        required:true,
+        get:convertToNumber
     },
     origQty: {
         type:mongoose.Schema.Types.Decimal128,
-        required:true
+        required:true,
+        get:convertToNumber
     },
     executedQty: {
         type:mongoose.Schema.Types.Decimal128,
-        required:true
+        required:true,
+        get:convertToNumber
     },
     cummulativeQuoteQty: {
         type:mongoose.Schema.Types.Decimal128,
-        required:true
+        required:true,
+        get:convertToNumber
     },
     status: {
         type:String,
@@ -64,19 +72,28 @@ const orderSchema = new mongoose.Schema({
         required:true,
         default:false
     },
+    averagePrice: {
+        type:mongoose.Schema.Types.Decimal128,
+        required:true,
+        default:0,
+        get:convertToNumber
+    },
     fills: [
         {
             price: {
                 type:mongoose.Schema.Types.Decimal128,
-                required:true
+                required:true,
+                get:convertToNumber
             },
             qty: {
                 type:mongoose.Schema.Types.Decimal128,
-                required:true
+                required:true,
+                get:convertToNumber
             },
             commission: {
                 type:mongoose.Schema.Types.Decimal128,
-                required:true
+                required:true,
+                get:convertToNumber
             },
             commissionAsset: {
                 type:String,
@@ -88,6 +105,8 @@ const orderSchema = new mongoose.Schema({
             }        
         }
     ]
-});
+}, {toJSON: {getters: true}});
+
+orderSchema.set('timestamps', true);
 
 export default conn.model<IOrder>('Order', orderSchema);

@@ -30,8 +30,8 @@ export enum OrderStatus {
 }
 
 export interface OrderFill {
-    price:string;
-    qty:string;
+    price:string|number;
+    qty:string|number;
     commission:string;
     commissionAsset:string;
     tradeId:number;
@@ -44,14 +44,16 @@ export interface OrderResponse {
     clientOrderId:string;
     transactTime:number;
     price:string;
-    origQty:string;
-    executedQty:string;
+    origQty:string|number;
+    executedQty:string|number;
     cummulativeQuoteQty:string;
     status:OrderStatus;
     timeInForce:OrderTimeInForce;
     type:OrderType;
     side:OrderSide;
     fills: OrderFill[];
+    averagePrice?:number;
+    sold?:boolean;
 }
 
 export type OrderParams = {

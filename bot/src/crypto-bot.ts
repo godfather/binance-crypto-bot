@@ -23,6 +23,7 @@ import { CoinListType } from './types/coin-list-types';
 import { EnumExangeInfoFilterType } from './types/info-types';
 import { resolve } from 'path';
 import { rejects } from 'assert';
+import { exit } from 'process';
 
 export class CryptoBot extends Socket {
 
@@ -39,6 +40,8 @@ export class CryptoBot extends Socket {
     private _baseWSAddress:string;
     private _coins:ISymbol[];
     private _candlesIntialized:boolean;
+    private _orderHelper:OrderHelper;        //initialize the orders helper – maybe we can move this helpers to another place
+
 
     public constructor(apiAddress:string, wallet:WalletBase|null) {
         super();
@@ -52,6 +55,9 @@ export class CryptoBot extends Socket {
         this._configPath = process.env.CONFIG_PATH!;
         this._sellAumont = parseFloat(process.env.SELL_AUMONT!);
         this._buyAumont = parseFloat(process.env.BUY_AUMONT!);
+        
+        //initialize the orders helper – maybe we can move this helpers to another place
+        this._orderHelper = OrderHelper.getInstance();
 
         this._baseWSAddress = apiAddress;
         
@@ -75,6 +81,9 @@ export class CryptoBot extends Socket {
                 this.apiAddress = this._wsURL = `${baseApiAddress}stream?streams=${coinsList.join('/')}`;
     
                 console.log(this._wsURL);
+                
+                // this._orderHelper.reloadSymbols();
+                
                 if(!restartBot) this.run();
                 else {
                     this._initializeCandles();
@@ -123,6 +132,8 @@ export class CryptoBot extends Socket {
         this._prevCandlePrice[pi].price = this._candles[ci].candles[this._candles[ci].candles.length -1].closePrice;   //Store the latest candle close price
         const candle = new CandleBase(klineData, this._prevCandlePrice[pi].price);                                     //convert into a Candle object
     
+        // return this._createOrder(candle, OrderSide.SELL);
+
         //PROCESS ONLY IF CURRENT CANDLE START TIME IS DIFFERENT OF THE CANDLE START TIME
         if(this._currentStartTime[ti].timestamp == candle.openTimeMS) return;
 
@@ -138,10 +149,10 @@ export class CryptoBot extends Socket {
             console.log(`${this._candles[ci].symbol} RSI: ${rsi}`); //print the current RSI
 
             //BUY IF RSI OVERMATCH 70
-            // if(rsi > 70 && rsi < 95) this._createOrder(candle, OrderSide.SELL);
+            if(rsi > 70 && rsi < 95) this._createOrder(candle, OrderSide.SELL);
 
             //BUY IF RSI IS ABOVE THE 30
-            if(rsi < 60 && rsi > 5) this._createOrder(candle, OrderSide.BUY);
+            if(rsi < 30 && rsi > 5) this._createOrder(candle, OrderSide.BUY);
 
             //print candles
             console.table(this._candles[ci].candles);
@@ -156,37 +167,80 @@ export class CryptoBot extends Socket {
         //get the current coin on coins collection
         const coin = this._coins.find(scoin => scoin.symbol === candle.symbol!.substring(0,3))!;
         
-        //initialize the orders helper – maybe we can move this helpers to another place
-        const ordersHelper = OrderHelper.getInstance();
-        ordersHelper.init(this._coins);
-
         //check if it's a order to buy 
         if(orderSide == OrderSide.BUY) {
+            const balance = this._wallet!.status.balances.find(balance => balance.asset === coin.stable);
+            if(parseFloat(balance!.free) < coin!.filters.minNotional || coin.aumont < coin!.filters.minNotional) {
+                console.log(`Insufficient funds: BALANCE: ${balance?.free} SYMBOL: ${coin.filters.minNotional}`);
+                return;
+            }
 
-            //get the aumont to buy based on the candle current price
-            ordersHelper.getAumont(candle.symbol!.substring(0,3), candle.closePrice, orderSide).then(aumont => {
-                // fix the aumont precision and get the aumont on stable coin
-                const fixedAumont:number = parseFloat((coin.symbol !== 'BTC' ? aumont : (aumont * 1000)).toFixed(8)) ; //remover a multiplicação
-                const stablePrice:number = (fixedAumont * candle.closePrice);
-                
-                //log the order on console
-                console.log(`${operation} ${fixedAumont} ${candle.symbol!.substring(0,3)} por ${stablePrice} ${coin.stable}`);
+            ApiHelper.getPrivateInstance().newOrder(candle.symbol!, orderSide, OrderType.MARKET, coin.filters.minNotional).then(response => {
+                console.log(`${operation} ${coin.filters.minNotional / candle.closePrice} ${candle.symbol!.substring(0,3)} por ${coin.filters.minNotional} ${coin.stable}`);
+                this._persistOrder(response);
 
-                //make a request to binance api
-                ApiHelper.getPrivateInstance().newOrder(candle.symbol!, orderSide, OrderType.MARKET, fixedAumont).then(response => {
-                    //persis the order on db
-                    console.log(response);
-                    this._persistOrder(response);
+                //decreate the symbol aumont and save it on db
+                this._orderHelper.updateAumont(coin.symbol, (coin.filters.minNotional * -1)).then(_ => {
+                    //update the coins collection with the new values
+                    Symbol.find({}).then(symbols => this._coins = symbols);
+                });
 
-                    //decreate the symbol aumont and save it on db
-                    ordersHelper.decreseAumont(candle.symbol!, stablePrice).then(_ => {
-                        //update the coins collection with the new values
-                        Symbol.find({}).then(symbols => this._coins = symbols);
-                    });
+            }).catch(e => console.log(e));
+        }
 
-                }).catch(e => console.log(e));
+        if(orderSide == OrderSide.SELL) {
+            Order.find({ sold:false, side:OrderSide.BUY, symbol:candle.symbol, averagePrice:{ $gt:candle.closePrice } }).then(orders => {
+
+                orders.forEach(order => {
+                    const quantity:number = order.executedQty as number;
+                    const price = quantity * candle.closePrice;
+
+                    ApiHelper.getPrivateInstance().newOrder(candle.symbol!, orderSide, OrderType.MARKET, quantity).then(response => {
+                        console.log(`${operation} ${quantity} ${candle.symbol!.substring(0,3)} por ${quantity * candle.closePrice} ${coin.stable}`);
+                        
+                        this._persistOrder(response);
+
+                        Order.findByIdAndUpdate({ _id:order._id }, { sold:true }, { upsert:true, new:true }).then(order => {
+                            console.log(`SOLD ORDER ID: ${order._id}`);
+                            
+                            //decreate the symbol aumont and save it on db
+                            this._orderHelper.updateAumont(coin.symbol, price).then(_ => {
+                                //update the coins collection with the new values
+                                Symbol.find({}).then(symbols => this._coins = symbols);
+                            });
+
+                        }).catch(err => console.error(err));                        
+                    }).catch(e => console.log(e));
+                });
             });
         }
+
+            // console.log(balance);
+
+            // //get the aumont to buy based on the candle current price
+            // ordersHelper.getAumont(candle.symbol!.substring(0,3), candle.closePrice, orderSide).then(aumont => {
+            //     // fix the aumont precision and get the aumont on stable coin
+            //     const fixedAumont:number = parseFloat((coin.symbol !== 'BTC' ? aumont : (aumont * 1000)).toFixed(8)) ; //remover a multiplicação
+            //     const stablePrice:number = (fixedAumont * candle.closePrice);
+                
+            //     //log the order on console
+            //     console.log(`${operation} ${fixedAumont} ${candle.symbol!.substring(0,3)} por ${stablePrice} ${coin.stable}`);
+
+            //     //make a request to binance api
+            //     ApiHelper.getPrivateInstance().newOrder(candle.symbol!, orderSide, OrderType.MARKET, fixedAumont).then(response => {
+            //         //persis the order on db
+            //         console.log(response);
+            //         this._persistOrder(response);
+
+            //         //decreate the symbol aumont and save it on db
+            //         ordersHelper.decreseAumont(candle.symbol!, stablePrice).then(_ => {
+            //             //update the coins collection with the new values
+            //             Symbol.find({}).then(symbols => this._coins = symbols);
+            //         });
+
+            //     }).catch(e => console.log(e));
+            // });
+        // }
     
 
         // ApiHelper.getPrivateInstance().newOrder(candle.symbol, orderSide, OrderType.MARKET, aumont).then(response => {
@@ -196,6 +250,12 @@ export class CryptoBot extends Socket {
     }
 
     private _persistOrder(orderResponse:OrderResponse) {
+        
+        const initialAveragePrice = 0;
+        const averagePrice = orderResponse.fills.reduce((total, element) => total += (element.price as number), initialAveragePrice) / orderResponse.fills.length;
+
+        orderResponse.averagePrice = averagePrice;
+
         Order.create(orderResponse).then(order => {
             this._orders.push(orderResponse); //update order
             console.log(`NEW ORDER ${order._id} SAVED`);
@@ -232,9 +292,11 @@ export class CryptoBot extends Socket {
         //LOADING FROM BINANCE THE LATEST CANDLES AND CONVERTING INTO CANDLES OBJECT ARRAY
         this._coins.forEach(coin => {
             const symbolCoin = coin.symbol+coin.stable;
+            console.log('Initialize: ' + symbolCoin);
             ApiHelper.getInstance().getLatestCandles(symbolCoin).then(response => {
-                response.forEach((candle:CandleType) => {
-                    const currentCandle = new CandleBase(candle, 0, symbolCoin);
+                response.forEach((candle:CandleType, index:number) => {
+                    const lastClosePrice = index === 0 ? 0 : parseFloat(response[index - 1][4] as string);
+                    const currentCandle = new CandleBase(candle, lastClosePrice, symbolCoin);
                     this._pushCandleToCollection(currentCandle);
                 });
                
@@ -248,14 +310,14 @@ export class CryptoBot extends Socket {
         });
     }
 
-    private _updateSymbolExchangeInfo():Promise<ISymbol[]> {
+    private _updateSymbolExchangeInfo():Promise<ISymbol[]> {        
         const exchangeInfo = ApiHelper.getInstance().getExchangeInfo(this._coins);
         
         return new Promise((resolve, reject) => {
             exchangeInfo.then(result => {
                 let count = 0;
-                const total = result.symbols.length;
-                
+                const total = result.symbols.length;        
+
                 result.symbols.forEach(symbol => {
                     const lotSize = symbol.filters.find(filter => filter.filterType == EnumExangeInfoFilterType.LOT_SIZE)!;
                     const minNotional = symbol.filters.find(filter => filter.filterType == EnumExangeInfoFilterType.MIN_NOTIONAL)!;
@@ -268,7 +330,7 @@ export class CryptoBot extends Socket {
                         count++;
                         console.log(`UPDATE COIN: ${coin?.symbol} COUNT: ${count} FROM ${total}`);
 
-                        const coinIndex = this._coins.findIndex( coin => coin.symbol == coin?.symbol );
+                        const coinIndex = this._coins.findIndex( scoin => scoin.symbol == coin?.symbol );
                         if(coinIndex > -1) this._coins[coinIndex]! = coin as ISymbol;
                         else this._coins.push(coin as ISymbol);
 

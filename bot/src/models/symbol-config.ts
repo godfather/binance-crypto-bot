@@ -11,6 +11,10 @@ export interface ISymbol extends Document {
     }
 }
 
+const convertToNumber = (value:any) => {
+    return typeof value !== 'undefined' ? parseFloat(value.toString()) : value;
+}
+
 const symbolSchema = new mongoose.Schema({
     symbol: {
         type:String,
@@ -25,18 +29,23 @@ const symbolSchema = new mongoose.Schema({
     aumont: {
         type:mongoose.Schema.Types.Decimal128,
         required:true,
-        default:0
+        default:0, 
+        get:convertToNumber
     },
     filters: {
         minQty: {
             type:mongoose.Schema.Types.Decimal128,
-            default:0
+            default:0,
+            get:convertToNumber
         },
         minNotional: {
             type:mongoose.Schema.Types.Decimal128,
-            default:0
+            default:0,
+            get:convertToNumber
         }
     }
-});
+}, {toJSON: {getters: true}});
+
+symbolSchema.set('timestamps', true);
 
 export default conn.model<ISymbol>('Symbol', symbolSchema);
