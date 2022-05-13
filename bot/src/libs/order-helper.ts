@@ -46,7 +46,7 @@ export class OrderHelper {
     // }
 
     public updateAumont(symbol:string, aumont:number) {
-        return Symbol.updateOne({ symbol:symbol }, {$inc:{ aumont:aumont}}, { new:true, upsert:true}).then(result => console.log(result));
+        return Symbol.updateOne({ symbol:symbol }, {$inc:{ aumont:aumont}}, { new:true }).then(result => console.log(result));
     }
 
     private _loadSymbols() {
