@@ -205,6 +205,8 @@ export class CryptoBot extends Socket {
             orderResponse.price = orderResponse.fills.reduce((total, element) => {
                 return total += (parseFloat(element.qty as string) * parseFloat(element.price as string));
             }, 0).toString();
+
+            orderResponse.sold = true;
         }
 
         Order.create(orderResponse).then(order => {
