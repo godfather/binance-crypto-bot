@@ -197,12 +197,15 @@ export class CryptoBot extends Socket {
         }
     }
 
-    private _persistOrder(orderResponse:OrderResponse) {
-        
-        const initialAveragePrice = 0;
-        const averagePrice = orderResponse.fills.reduce((total, element) => total += (element.price as number), initialAveragePrice) / orderResponse.fills.length;
+    private _persistOrder(orderResponse:OrderResponse):void {
+        const averagePrice = orderResponse.fills.reduce((total, element) => total += parseFloat(element.price as string), 0);        
+        orderResponse.averagePrice = (averagePrice / orderResponse.fills.length);
 
-        orderResponse.averagePrice = averagePrice;
+        if(orderResponse.side === OrderSide.SELL) {
+            orderResponse.price = orderResponse.fills.reduce((total, element) => {
+                return total += (parseFloat(element.qty as string) * parseFloat(element.price as string));
+            }, 0).toString();
+        }
 
         Order.create(orderResponse).then(order => {
             this._orders.push(orderResponse); //update order

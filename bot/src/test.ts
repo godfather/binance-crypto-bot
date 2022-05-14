@@ -1,6 +1,6 @@
 import { conn } from './libs/mongo-connection';
 import Order, { IOrder } from './models/orders';
-import { OrderResponse } from './types/order-types';
+import { OrderResponse, OrderSide } from './types/order-types';
 import { Decimal128 } from 'mongodb';
 import { OrderHelper } from './libs/order-helper';
 import { ApiHelper } from './libs/api';
@@ -61,70 +61,65 @@ const data = {
     ]
   };
 
+
+
+const data2 = 	{
+  "symbol" : "MAMAMIA",
+  "orderId" : 4195815,
+  "orderListId" : -1,
+  "clientOrderId" : "oKK7vl27SAMMUthMtEPbjf",
+  "transactTime" : 1652416261911,
+  "price" : "0.00000000",
+  "origQty" : "0.08624000",
+  "executedQty" : "0.08624000",
+  "cummulativeQuoteQty" : "2631.79880869",
+  "status" : "FILLED",
+  "timeInForce" : "GTC",
+  "type" : "MARKET",
+  "side" : "SELL",
+  "sold" : false,
+  "averagePrice" : 0,
+  "fills" : [
+    {
+      "price" : "30518.68000000",
+      "qty" : "0.05767000",
+      "commission" : "0.00000000",
+      "commissionAsset" : "USDT",
+      "tradeId" : 1954550,
+    },
+    {
+      "price" : "30514.08000000",
+      "qty" : "0.00415300",
+      "commission" : "0.00000000",
+      "commissionAsset" : "USDT",
+      "tradeId" : 1954551,
+    },
+    {
+      "price" : "30514.05000000",
+      "qty" : "0.02441700",
+      "commission" : "0.00000000",
+      "commissionAsset" : "USDT",
+      "tradeId" : 1954552,
+    }
+  ],
+};
+
 const main = async (callback:Function) => callback();
 
 main(async () => {
-    // await conn;
-    // const order = await Order.create(data);
-    // console.log(order);
-    
-    const s = Symbol.find({});
+  const orderResponse = data2 as OrderResponse;
+  const averagePrice = orderResponse.fills.reduce((total, element) => total += parseFloat(element.price as string), 0);
 
-    const api = s.then(smb => {
-        return ApiHelper.getInstance().getExchangeInfo(smb);
-    })
+  orderResponse.averagePrice = (averagePrice / orderResponse.fills.length);
 
-    const c = api.then(result => {
-      return new Promise<ISymbol[]>((resolve, reject) => { 
-        const total = result.symbols.length;
-        let count = 0;
-        const symbols:ISymbol[] = [];
-
-        result.symbols.forEach(symbol => {
-            const lotSize = symbol.filters.find(filter => filter.filterType == EnumExangeInfoFilterType.LOT_SIZE)!;
-            const minNotional = symbol.filters.find(filter => filter.filterType == EnumExangeInfoFilterType.MIN_NOTIONAL)!;
+  if(orderResponse.side === OrderSide.SELL) {
+    orderResponse.price = orderResponse.fills.reduce((total, element) => {
+        return total += (parseFloat(element.qty as string) * parseFloat(element.price as string));
+    }, 0).toString();
+}
 
 
-            Symbol.findOneAndUpdate(
-              { symbol:symbol.baseAsset }, 
-              { $set:{ "filters.minQty": lotSize.minQty!, "filters.minNotional":minNotional.minNotional }}
-            ).then(data => {
-              count++;
-              console.log('COUNT: ' + count);
-              symbols.push(data as ISymbol);
-              if(count === total) return resolve(symbols);
-            }).catch(err => reject(err));
-        });
-      });
-    })
+  // console.log(orderResponse); 
 
-
-    c.then((data) => {
-      console.log(data);
-    }).catch(err => console.error(err));
-
-    // const result = await ApiHelper.getInstance().getExchangeInfo(s);
-
-    // result.symbols.forEach(symbol => {
-    //     const lotSize = symbol.filters.find(filter => filter.filterType == EnumExangeInfoFilterType.LOT_SIZE)!;
-    //     const minNotional = symbol.filters.find(filter => filter.filterType == EnumExangeInfoFilterType.MIN_NOTIONAL)!;
-
-    //     console.log(lotSize);
-
-    //     Symbol.findOneAndUpdate(
-    //       { symbol:symbol.baseAsset }, 
-    //       { $set:{ "filters.minQty": lotSize.minQty!, "filters.minNotional":minNotional.minNotional }}
-    //     ).then(result => console.table(result)).catch(err => console.error(err));
-
-    // });
-
-
-    
-
-
-    // const ordersHelper = OrderHelper.getInstance();
-    // ordersHelper.init(101, [ "BTC","ETH","LTC" ]);
-    // ordersHelper.getAumont("BTC", 38350).then(aumont => {
-    //     console.log(`AQUI: ${aumont}`);
-    // });
+  Order.create(orderResponse).then(order => console.log(`NEW ORDER ${order._id} SAVED`));
 });
