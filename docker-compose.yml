@@ -3,15 +3,23 @@ networks:
   data:
 services:
   bot:
-    image: node:14.9.0
+    image: node:17.7.1
+    container_name: crypto-bot
     volumes:
       - ./bot:/bot
-    command: bash -c "cd /bot && npm install && node ./dist/index.js"
+    command: bash -c " npm install -g pm2 && cd /bot && npm install && pm2-runtime start ecosystem.config.js"
+    environment:
+      - DB_URI=mongodb://db:27017/crypto-bot
     depends_on:
       - db
     networks:
       - data
   db:
     image: mongo:5.0.6
+    container_name: mongo-crypto
+    volumes:
+      - ./mongo-data:/data/db
+    ports:
+      - 27017-27019:27017-27019
     networks:
       - data
