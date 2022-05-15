@@ -41,6 +41,7 @@ export class CryptoBot extends Socket {
     private _coins:ISymbol[];
     private _candlesIntialized:boolean;
     private _orderHelper:OrderHelper;        //initialize the orders helper – maybe we can move this helpers to another place
+    private _updatingExchange:boolean;
 
 
     public constructor(apiAddress:string, wallet:WalletBase|null) {
@@ -55,6 +56,7 @@ export class CryptoBot extends Socket {
         this._configPath = process.env.CONFIG_PATH!;
         this._sellAumont = parseFloat(process.env.SELL_AUMONT!);
         this._buyAumont = parseFloat(process.env.BUY_AUMONT!);
+        this._updatingExchange = false;
         
         //initialize the orders helper – maybe we can move this helpers to another place
         this._orderHelper = OrderHelper.getInstance();
@@ -76,20 +78,22 @@ export class CryptoBot extends Socket {
         Symbol.find({}).then(symbols => {
             this._coins = symbols;
 
-            this._updateSymbolExchangeInfo().then(_ => {
-                const coinsList:string[] = this._coins.map(coin => `${coin.symbol.toLowerCase()}${coin.stable.toLowerCase()}@kline_1m`);
-                this.apiAddress = this._wsURL = `${baseApiAddress}stream?streams=${coinsList.join('/')}`;
-    
-                console.log(this._wsURL);
-                
-                // this._orderHelper.reloadSymbols();
-                
-                if(!restartBot) this.run();
-                else {
-                    this._initializeCandles();
-                    this.restart();
-                }    
-            });
+            if(!this._updatingExchange) {
+                this._updateSymbolExchangeInfo().then(_ => {
+                    const coinsList:string[] = this._coins.map(coin => `${coin.symbol.toLowerCase()}${coin.stable.toLowerCase()}@kline_1m`);
+                    this.apiAddress = this._wsURL = `${baseApiAddress}stream?streams=${coinsList.join('/')}`;
+        
+                    console.log(this._wsURL);
+                    
+                    // this._orderHelper.reloadSymbols();
+                    
+                    if(!restartBot) this.run();
+                    else {
+                        this._initializeCandles();
+                        this.restart();
+                    }
+                });
+            }
         }).catch(err => console.log(err));
     }
 
@@ -122,7 +126,11 @@ export class CryptoBot extends Socket {
         this._candles[ci].candles.push(candle);                                      // push the current candle to candles array
         this._currentStartTime[ti].timestamp = candle.openTimeMS;                    // update the current start time
 
-        this._updateSymbolExchangeInfo().then(_ => console.log('LOT_SIZE && MIN_NOTIONAL UPDATED.')).catch(err => console.error(err));
+        if(!this._updatingExchange) {
+            this._updateSymbolExchangeInfo()
+                .then(_ => console.log('LOT_SIZE && MIN_NOTIONAL UPDATED.'))
+                .catch(err => console.error(err));
+        }
 
         //BUY AND SELL ONLY IF THE NUMBER OF CANDLES IS BIGGER THAN 13
         if(this._candles[ci].candles.length > 13) {
@@ -142,6 +150,7 @@ export class CryptoBot extends Socket {
     }
 
     private _createOrder(candle:CandleBase, orderSide:OrderSide):void {
+        console.log('_createOrder ' + orderSide);
         //choose the correct operation
         let operation = orderSide == OrderSide.BUY ? 'Comprando' : 'Vendendo';
 
@@ -170,11 +179,19 @@ export class CryptoBot extends Socket {
         }
 
         if(orderSide == OrderSide.SELL) {
-            Order.find({ sold:false, side:OrderSide.BUY, symbol:candle.symbol, averagePrice:{ $gt:candle.closePrice } }).then(orders => {
+            Order.find({ sold:false, side:OrderSide.BUY, symbol:candle.symbol }).then(orders => {
 
                 orders.forEach(order => {
                     const quantity:number = order.executedQty as number;
-                    const price = quantity * candle.closePrice;
+                    const price:number = quantity * candle.closePrice;
+                    const cost:number = order.cummulativeQuoteQty as number;
+
+                    console.log(`START SEELING...`);
+                    //if thee price is below the cost + 10%
+                    if(price < (cost * (1+ 0.05))) {
+                        console.log(`SELL CANCELLED! THE PRICE(${price}) IS BELOW THE COST(${cost}) + PROFIT(5%)`);
+                        return;
+                    }
 
                     ApiHelper.getPrivateInstance().newOrder(candle.symbol!, orderSide, OrderType.MARKET, quantity).then(response => {
                         console.log(`${operation} ${quantity} ${candle.symbol!.substring(0,3)} por ${quantity * candle.closePrice} ${coin.stable}`);
@@ -263,7 +280,8 @@ export class CryptoBot extends Socket {
         });
     }
 
-    private _updateSymbolExchangeInfo():Promise<ISymbol[]> {        
+    private _updateSymbolExchangeInfo():Promise<ISymbol[]> {
+        this._updatingExchange = true;
         const exchangeInfo = ApiHelper.getInstance().getExchangeInfo(this._coins);
         
         return new Promise((resolve, reject) => {
@@ -287,8 +305,14 @@ export class CryptoBot extends Socket {
                         if(coinIndex > -1) this._coins[coinIndex]! = coin as ISymbol;
                         else this._coins.push(coin as ISymbol);
 
-                        if(count === total) return resolve(this._coins);
-                    }).catch(err => reject(err));        
+                        if(count === total) {
+                            this._updatingExchange = false;
+                            return resolve(this._coins);
+                        }
+                    }).catch(err => {
+                        this._updatingExchange = false;
+                        return reject(err);
+                    });        
                 });    
             })
         });

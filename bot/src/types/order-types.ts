@@ -46,7 +46,7 @@ export interface OrderResponse {
     price:string;
     origQty:string|number;
     executedQty:string|number;
-    cummulativeQuoteQty:string;
+    cummulativeQuoteQty:string|number;
     status:OrderStatus;
     timeInForce:OrderTimeInForce;
     type:OrderType;
