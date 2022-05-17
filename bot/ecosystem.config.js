@@ -9,5 +9,6 @@ module.exports = {
     restart_delay: 300,
     watch:true,
     max_memory_restart: '300M',
+    cron_restart: '0 0 * * *',
   }]
 }
