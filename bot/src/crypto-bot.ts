@@ -110,7 +110,7 @@ export class CryptoBot extends Socket {
         const pi = this._prevCandlePrice.findIndex(price => price.symbol === klineData.data.s);          //get the prevCandlePrice index
         const ti = this._currentStartTime.findIndex(startTime => startTime.symbol === klineData.data.s); //get the currentStartTime index
         
-        console.log(this._candles[ci].symbol, `USD$ ${parseFloat(klineData.data.k.c).toFixed(2)}`);
+        // console.log(this._candles[ci].symbol, `USD$ ${parseFloat(klineData.data.k.c).toFixed(2)}`);
 
         if(ci > -1 && this._candles[ci].candles.length < 1) return; // stop here if no have candles
 
@@ -145,7 +145,7 @@ export class CryptoBot extends Socket {
 
             //print candles
             console.table(this._candles[ci].candles);
-            console.log(this._prevCandlePrice[pi]);
+            // console.log(this._prevCandlePrice[pi]);
         }
     }
 
