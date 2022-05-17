@@ -7,6 +7,7 @@ module.exports = {
     autorestart: true,
     max_restarts: 100,
     restart_delay: 300,
+    watch:true,
     max_memory_restart: '300M',
   }]
 }

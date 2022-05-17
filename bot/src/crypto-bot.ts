@@ -184,12 +184,12 @@ export class CryptoBot extends Socket {
                 orders.forEach(order => {
                     const quantity:number = order.executedQty as number;
                     const price:number = quantity * candle.closePrice;
-                    const cost:number = order.cummulativeQuoteQty as number;
+                    const cost:number = ((order.cummulativeQuoteQty as number) * (1 + 0.05));
 
                     console.log(`START SEELING...`);
                     //if thee price is below the cost + 10%
-                    if(price < (cost * (1+ 0.05))) {
-                        console.log(`SELL CANCELLED! THE PRICE(${price}) IS BELOW THE COST(${cost}) + PROFIT(5%)`);
+                    if(price < cost) {
+                        console.log(`SELL CANCELLED! THE PRICE(${price}) IS BELOW THE COST(${cost}) + PROFIT(5%) => DIFFERENCE: ${cost - price}`);
                         return;
                     }
 
