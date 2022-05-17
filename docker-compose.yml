@@ -7,7 +7,7 @@ services:
     container_name: crypto-bot
     volumes:
       - ./bot:/bot
-    command: bash -c " npm install -g pm2 && cd /bot && npm install && pm2-runtime start ecosystem.config.js"
+    command: bash -c " npm install -g pm2 && cd /bot && npm install && tsc && pm2-runtime start ecosystem.config.js"
     environment:
       - DB_URI=mongodb://db:27017/crypto-bot
     depends_on:
