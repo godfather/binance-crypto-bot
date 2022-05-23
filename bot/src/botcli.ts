@@ -6,8 +6,9 @@ import SymbolCrud from './libs/symbol-crud';
 interface SymbolOptions {
     operation:string;
     symbol:string;
-    aumont:number;
-    stable:string;
+    aumont?:number;
+    stable?:string;
+    profit?:number;
 }
 
 const cli = new Command();
@@ -17,6 +18,7 @@ cli.command('symbol')
     .requiredOption('-o, --operation <string>', 'the operation, eg: c = create, r = read, u = update, d = delete')
     .option('-s, --symbol <string>', 'symbol string, eg: BTC')
     .option('-a, --aumont <decimal>', 'aumont, eg: 10.33')
+    .option('-p, --profit <decimal>', 'desired profit, eg: 0.05')
     .option('-S, --stable <string>', 'the stable coin used on operation')
     .action(async (options:SymbolOptions) => {
         if(options.operation === 'r')  await SymbolCrud.getInstance().list()
@@ -27,8 +29,8 @@ cli.command('symbol')
             await SymbolCrud.getInstance().create(options.symbol, options.aumont);
         }
 
-        if(options.operation === 'u' && (options.symbol && options.aumont)) {
-            await SymbolCrud.getInstance().update(options.symbol, options.aumont);
+        if(options.operation === 'u' && (options.symbol)) {
+            await SymbolCrud.getInstance().update(options.symbol, options.aumont, options.profit);
         }
 
         if(options.operation === 'd' && options.symbol) {

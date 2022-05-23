@@ -184,7 +184,7 @@ export class CryptoBot extends Socket {
                 orders.forEach(order => {
                     const quantity:number = order.executedQty as number;
                     const price:number = quantity * candle.closePrice;
-                    const cost:number = ((order.cummulativeQuoteQty as number) * (1 + 0.05));
+                    const cost:number = ((order.cummulativeQuoteQty as number) * (1 + coin.profit));
 
                     console.log(`START SEELING...`);
                     //if thee price is below the cost + 10%

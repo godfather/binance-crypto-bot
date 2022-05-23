@@ -5,6 +5,7 @@ export interface ISymbol extends Document {
     symbol:string;
     stable:string;
     aumont:number;
+    profit:number;
     filters:{
         minQty:number;
         minNotional:number;
@@ -27,6 +28,12 @@ const symbolSchema = new mongoose.Schema({
         trim:true
     },
     aumont: {
+        type:mongoose.Schema.Types.Decimal128,
+        required:true,
+        default:0, 
+        get:convertToNumber
+    },
+    profit: {
         type:mongoose.Schema.Types.Decimal128,
         required:true,
         default:0, 

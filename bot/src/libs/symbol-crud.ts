@@ -19,11 +19,11 @@ export default class SymbolCrud {
         return console.log(`${result._id} SAVED`);       
     }
 
-    public async update(symbol:string, aumont:number) {
+    public async update(symbol:string, aumont=0.00, profit=0.05) {        
         const result = await Symbol.findOneAndUpdate(
-            { symbol:symbol }, 
-            { aumont:aumont }, 
-            { new:true, upsert:true}
+            { symbol:symbol },
+            { $inc:{ aumont:aumont }, profit:profit},
+            { new:true, upsert:true }
         );
 
         return console.log(`${result._id} SAVED`);
