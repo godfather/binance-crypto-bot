@@ -9,6 +9,7 @@ import { ApiHelper } from "./libs/api";
 import { calcRSI } from "./libs/rsi-index";
 import { OrderHelper } from './libs/order-helper';
 import { conn } from './libs/mongo-connection';
+import { MM, MMSymbol, MMCollection } from './libs/mms';
 
 //MODELS
 import { CandleBase } from './models/candle-base';
@@ -42,6 +43,7 @@ export class CryptoBot extends Socket {
     private _candlesIntialized:boolean;
     private _orderHelper:OrderHelper;        //initialize the orders helper – maybe we can move this helpers to another place
     private _updatingExchange:boolean;
+    private _mmCollection:MMCollection;
 
 
     public constructor(apiAddress:string, wallet:WalletBase|null) {
@@ -60,6 +62,8 @@ export class CryptoBot extends Socket {
         
         //initialize the orders helper – maybe we can move this helpers to another place
         this._orderHelper = OrderHelper.getInstance();
+
+        this._mmCollection = MMCollection.getInstance();
 
         this._baseWSAddress = apiAddress;
         
@@ -122,6 +126,8 @@ export class CryptoBot extends Socket {
         //PROCESS ONLY IF CURRENT CANDLE START TIME IS DIFFERENT OF THE CANDLE START TIME
         if(this._currentStartTime[ti].timestamp == candle.openTimeMS) return;
 
+        this._checkTradeTrigger(candle);
+
         if(this._candles[ci].candles.length > 15) this._candles[ci].candles.shift(); // if has more than 15 candles remove one
         this._candles[ci].candles.push(candle);                                      // push the current candle to candles array
         this._currentStartTime[ti].timestamp = candle.openTimeMS;                    // update the current start time
@@ -138,15 +144,31 @@ export class CryptoBot extends Socket {
             console.log(`${this._candles[ci].symbol} RSI: ${rsi}`); //print the current RSI
 
             //BUY IF RSI OVERMATCH 70
-            if(rsi > 70 && rsi < 95) this._createOrder(candle, OrderSide.SELL);
+            // if(rsi > 70 && rsi < 95) this._createOrder(candle, OrderSide.SELL);
 
             //BUY IF RSI IS ABOVE THE 30
-            if(rsi < 30 && rsi > 5) this._createOrder(candle, OrderSide.BUY);
+            // if(rsi < 30 && rsi > 5) this._createOrder(candle, OrderSide.BUY);
 
             //print candles
-            console.table(this._candles[ci].candles);
+            // console.table(this._candles[ci].candles);
             // console.log(this._prevCandlePrice[pi]);
         }
+    }
+
+    //TODO: move this to anoter file
+    private _checkTradeTrigger(candle:CandleBase):void {
+        const mmSimple = this._mmCollection.find(candle.symbol!)?.mm.mmSimple;
+        const mmExponential = this._mmCollection.find(candle.symbol!)?.mm.mmExponential;
+        const mmDifference = this._mmCollection.find(candle.symbol!)?.mm.mmDifference;
+        const mmDifferenceRate = this._mmCollection.find(candle.symbol!)?.mm.mmDifferenceRate;
+ 
+        console.log(`SIMPLE ${candle.symbol!}: ${mmSimple}`);
+        console.log(`EXPONENTIAL ${candle.symbol!}: ${mmExponential}`);
+        console.log(`DIFFERENCE ${candle.symbol!}: ${mmDifference}`);
+        console.log(`RATE ${candle.symbol!}: ${mmDifferenceRate}`);
+
+        if(mmDifferenceRate! > 1) console.log('COMPRAR');
+        else console.log('VENDER');
     }
 
     private _createOrder(candle:CandleBase, orderSide:OrderSide):void {
@@ -159,7 +181,7 @@ export class CryptoBot extends Socket {
         
         //check if it's a order to buy 
         if(orderSide == OrderSide.BUY) {
-            const balance = this._wallet!.status.balances.find(balance => balance.asset === coin.stable);
+            const balance = this._wallet!.status.balances.find(balance => balance.asset === coin.stable);           //get the budget to make the transaction
             if(parseFloat(balance!.free) < coin!.filters.minNotional || coin.aumont < coin!.filters.minNotional) {
                 console.log(`Insufficient funds: BALANCE: ${balance?.free} SYMBOL: ${coin.filters.minNotional}`);
                 return;
@@ -274,6 +296,7 @@ export class CryptoBot extends Socket {
 
                 if(initalizedCount === this._coins.length) {
                     this._candlesIntialized = true;
+                    this._candles.forEach(candleCollection => this._mmCollection.update(candleCollection));
                     console.log('Candles Initilized…');
                 }
             })
