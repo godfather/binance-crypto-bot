@@ -7,6 +7,7 @@ import crypto from 'crypto';
 import qs from 'qs';
 import { ISymbol } from '../models/symbol-config';
 import { IExchangeInfo } from '../types/info-types';
+import { iGainer } from '../models/gainer-model';
 
 
 export class ApiHelper extends BaseHttpClient {
@@ -43,6 +44,11 @@ export class ApiHelper extends BaseHttpClient {
         return this.instance.get<unknown, Wallet>('/account', {
             params: { timestamp:timeStamp, signature:signature },
         });
+    }
+
+    public getGainers() {
+        return this.instance.get<unknown, iGainer[]>('/ticker/24hr');
+
     }
 
     //MARKET ONLY
