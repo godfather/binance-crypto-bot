@@ -1,2 +1,0 @@
-#!/usr/bin/env DB_URI=mongodb://db:27017/crypto-bot node
-require('../dist/botcli.js');

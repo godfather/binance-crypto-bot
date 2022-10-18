@@ -1,8 +1,0 @@
-{
-    "cryptoCoins": [
-        "BTC",
-        "ETH",
-        "LTC"
-    ],
-    "stableCoin": "USDT"
-}
