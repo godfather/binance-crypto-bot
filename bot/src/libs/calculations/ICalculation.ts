@@ -1,5 +1,6 @@
 export interface ICalculation {
-    values:number[];
+    values: number[];
     addValues(values:number[]):void;
-    calc(range:number):number;
+    calc(range:number): number;
+    update(newValue:number): number;
 }

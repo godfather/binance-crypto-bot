@@ -20,6 +20,15 @@ describe('testing mms class', () => {
         const result = mms.calc();
         expect(result).toEqual(6);
     });
+
+    test('test mms update', () => {
+        const mms = new MMSCalculation(); //MMSCalculation instance
+        mms.addValues(testValues);
+        mms.calc();
+
+        const result = mms.update(9); 
+        expect(result).toEqual(7);
+    })
 });
 
 describe('testing mme class', () => {
@@ -48,4 +57,18 @@ describe('testing mme class', () => {
         const result = mme10.calc();
         expect(result).toEqual(22.91500443403305);
     });
+
+    test('update mme10 calc', () => {
+        const mms = new MMSCalculation();
+        const range = 10;
+        mms.addValues(testValues.slice(0,range));
+
+        const mme10 = new MMECalculation(range);
+        mme10.lastMME = mms.calc();
+        mme10.addValues(testValues);
+        mme10.calc();
+        mme10.update(22.15);
+        
+        expect(mme10.currentMME).toEqual(22.775912718754313);
+    })
 })

@@ -10,4 +10,10 @@ export class MMSCalculation implements ICalculation {
     public calc(): number {
         return this.values.reduce((total, current) => total + current, 0) / this.values.length;
     }
+
+    public update(newValue:number) :number {
+        this.values.shift();
+        this.values.push(newValue);
+        return this.calc();
+    }
 }
