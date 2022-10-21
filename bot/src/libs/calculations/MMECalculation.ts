@@ -4,8 +4,7 @@ export class MMECalculation implements ICalculation {
     public values: number[];
     public lastMME: number;
     private _mmeValues: number[];
-
-    constructor(private _range:number) {}
+    private _range:number;
 
     public get exponentialWeight(): number {
         return this._calcExponentialWeight();
@@ -15,8 +14,14 @@ export class MMECalculation implements ICalculation {
         return this._mmeValues[this._mmeValues.length -1];
     }
 
-    public addValues(values: number[]): void {
+    public addRange(range:number): ICalculation {
+        this._range = range;
+        return this;
+    }
+
+    public addValues(values: number[]): ICalculation {
         this.values = values;
+        return this;
     }
     
     public calc(): number {
