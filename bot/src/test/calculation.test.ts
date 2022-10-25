@@ -1,5 +1,6 @@
 import { MMSCalculation } from "../libs/calculations/MMSCalculation";
 import { MMECalculation } from "../libs/calculations/MMECalculation";
+import { RSICalculation } from "../libs/calculations/RSICalculation";
 import { test, describe, expect } from '@jest/globals';
 
 //test values
@@ -66,4 +67,16 @@ describe('testing mme class', () => {
         
         expect(mme10.currentMME).toEqual(22.775912718754313);
     })
-})
+});
+
+
+describe('Test RSI class', () => {
+    test('Test RSI calc', () => {
+        const range = 14;
+        const testValues = [12,11,12,14,18,12,15,13,16,12,11,13,15,14,16,18,22,19,24,17,19];
+        const rsi = new RSICalculation();
+        rsi.addValues(testValues).addRange(range).calc();
+
+        expect(rsi.currentRSI).toEqual(55.2317220630741);
+    });
+});

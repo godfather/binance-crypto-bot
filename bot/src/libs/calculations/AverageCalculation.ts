@@ -3,6 +3,7 @@ import { ICalculation } from "./ICalculation";
 export class AverageCalculation implements ICalculation {
     public values: number[];
     private _simpleAverage: number;
+    private _range: number;
     
     public get simpleAverage(): number {
         return this._simpleAverage;
@@ -10,8 +11,8 @@ export class AverageCalculation implements ICalculation {
 
 
     addRange(range: number): ICalculation {
-        range;
-        throw new Error("Method not implemented.");
+        this._range = range;
+        return this;
     }
     
     addValues(values: number[]): ICalculation {
@@ -20,7 +21,7 @@ export class AverageCalculation implements ICalculation {
     }
     
     calc(): number {
-        this._simpleAverage = this.values.reduce((total, current) => total + current, 0) / this.values.length;
+        this._simpleAverage = this.values.reduce((total, current) => total + current, 0) / (this._range || this.values.length);
         return this.simpleAverage;
     }
     
