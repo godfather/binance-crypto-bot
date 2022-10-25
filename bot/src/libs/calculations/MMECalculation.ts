@@ -6,6 +6,11 @@ export class MMECalculation implements ICalculation {
     private _mmeValues: number[];
     private _range:number;
 
+    constructor() {
+        this.values = [];
+        this._mmeValues = [];
+    }
+
     public get exponentialWeight(): number {
         return this._calcExponentialWeight();
     }

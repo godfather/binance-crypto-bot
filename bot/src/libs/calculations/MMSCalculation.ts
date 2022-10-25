@@ -8,6 +8,7 @@ export class MMSCalculation implements ICalculation {
     private _avg: AverageCalculation;
     
     constructor() {
+        this.values = [];
         this._mmsValues = [];
         this._avg = new AverageCalculation();
     }
