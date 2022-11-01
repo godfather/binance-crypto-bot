@@ -1,20 +1,13 @@
 import 'dotenv/config';
 import { BaseHttpClient } from "./base-http-client";
-// import { CandleType } from "../types/candle-types";
+import crypto from 'crypto';
+import qs from 'qs';
 
 //importing interfaces
 import { IWallet } from '../models/iWallet';
 import { IGainer } from '../models/iGainer';
 import { IKline } from '../models/iKline';
 import { IExchangeInfo } from '../models/iExchangeInfo';
-
-// import { OrderType, OrderSide, OrderResponse, OrderParams } from '../types/order-types';
-import crypto from 'crypto';
-import qs from 'qs';
-// import { ISymbol } from '../models/symbol-config';
-// import { IExchangeInfo } from '../types/info-types';
-// import { iGainer } from '../models/gainer-model';
-
 
 export class ApiHelper extends BaseHttpClient {
     private static _instance:ApiHelper;
