@@ -1,13 +1,19 @@
 import 'dotenv/config';
 import { BaseHttpClient } from "./base-http-client";
-import { CandleType } from "../types/candle-types";
-import { Wallet } from '../types/wallet-types';
-import { OrderType, OrderSide, OrderResponse, OrderParams } from '../types/order-types';
+// import { CandleType } from "../types/candle-types";
+
+//importing interfaces
+import { IWallet } from '../models/iWallet';
+import { IGainer } from '../models/iGainer';
+import { IKline } from '../models/iKline';
+import { IExchangeInfo } from '../models/iExchangeInfo';
+
+// import { OrderType, OrderSide, OrderResponse, OrderParams } from '../types/order-types';
 import crypto from 'crypto';
 import qs from 'qs';
-import { ISymbol } from '../models/symbol-config';
-import { IExchangeInfo } from '../types/info-types';
-import { iGainer } from '../models/gainer-model';
+// import { ISymbol } from '../models/symbol-config';
+// import { IExchangeInfo } from '../types/info-types';
+// import { iGainer } from '../models/gainer-model';
 
 
 export class ApiHelper extends BaseHttpClient {
@@ -28,8 +34,8 @@ export class ApiHelper extends BaseHttpClient {
         return this._privateInstance;
     }
 
-    public getLatestCandles(symbol:string, interval='1m', limit=15) {
-        return this.instance.get<unknown, CandleType[]>('/klines', {
+    public getLatestKlines(symbol:string, interval='1m', limit=15) {
+        return this.instance.get<unknown, IKline[]>('/klines', {
             params: {
                 symbol:symbol, 
                 interval:interval,
@@ -38,37 +44,34 @@ export class ApiHelper extends BaseHttpClient {
         });
     }
 
-    public getWalletInfo() {
+    public getWalletInfo(): Promise<IWallet> {
         const timeStamp = Date.now();
         const signature = this._generateSignature(qs.stringify({ timestamp:timeStamp }));
-        return this.instance.get<unknown, Wallet>('/account', {
+        return this.instance.get<unknown, IWallet>('/account', {
             params: { timestamp:timeStamp, signature:signature },
         });
     }
 
     public getGainers() {
-        return this.instance.get<unknown, iGainer[]>('/ticker/24hr');
-
+        return this.instance.get<unknown, IGainer[]>('/ticker/24hr');
     }
 
-    //MARKET ONLY
-    public newOrder(symbol:string, side:OrderSide, type:OrderType, quantity:number) {
-        const timestamp = Date.now();
-        const params:OrderParams = { symbol, side, type, timestamp };
-        params[side === OrderSide.BUY ? 'quoteOrderQty' : 'quantity'] = quantity;
+//     //MARKET ONLY
+//     public newOrder(symbol:string, side:OrderSide, type:OrderType, quantity:number) {
+//         const timestamp = Date.now();
+//         const params:OrderParams = { symbol, side, type, timestamp };
+//         params[side === OrderSide.BUY ? 'quoteOrderQty' : 'quantity'] = quantity;
 
-        const signature = this._generateSignature(qs.stringify(params));
-        console.log(params);
-        return this.instance.post<unknown, OrderResponse>('/order', null, {
-            params: {...params, signature},
-        });
-    }
+//         const signature = this._generateSignature(qs.stringify(params));
+//         console.log(params);
+//         return this.instance.post<unknown, OrderResponse>('/order', null, {
+//             params: {...params, signature},
+//         });
+//     }
 
-    public getExchangeInfo(symbols:ISymbol[]) {
-        const symbolsList = symbols.map(coin => coin.symbol + coin.stable);
-        console.log(`Getting excange info for symbols ${symbolsList}`);
+    public getExchangeInfo(symbols:string[]) {
         return this.instance.get<unknown, IExchangeInfo>('/exchangeInfo', {
-            params: { symbols:JSON.stringify(symbolsList) },
+            params: { symbols:JSON.stringify(symbols) },
         });
     }
 
