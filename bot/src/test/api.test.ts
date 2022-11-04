@@ -1,6 +1,7 @@
 import { describe, test, expect } from '@jest/globals';
 
 import { ApiHelper } from '../api/api';
+import { OrderSide, OrderStatus, OrderType } from '../models/iOrder';
 
 
 describe("testing api endpoints", () => {
@@ -22,5 +23,10 @@ describe("testing api endpoints", () => {
     test("get exchange info for a symbol", async () => {
         const info = await ApiHelper.getInstance().getExchangeInfo([ 'BTCUSDT' ]);
         expect(info.symbols[0].symbol).toEqual('BTCUSDT');
+    });
+
+    test("make a new order type BUY", async () => {
+        const order = await ApiHelper.getPrivateInstance().newOrder('BNBUSDT', OrderSide.SELL, OrderType.MARKET, 1);
+        expect(order.status).toEqual(OrderStatus.FILLED);
     });
 });

@@ -8,6 +8,7 @@ import { IWallet } from '../models/iWallet';
 import { IGainer } from '../models/iGainer';
 import { IKline } from '../models/iKline';
 import { IExchangeInfo } from '../models/iExchangeInfo';
+import { OrderResponse, OrderSide, OrderType, OrderParams } from '../models/iOrder';
 
 export class ApiHelper extends BaseHttpClient {
     private static _instance:ApiHelper;
@@ -49,18 +50,18 @@ export class ApiHelper extends BaseHttpClient {
         return this.instance.get<unknown, IGainer[]>('/ticker/24hr');
     }
 
-//     //MARKET ONLY
-//     public newOrder(symbol:string, side:OrderSide, type:OrderType, quantity:number) {
-//         const timestamp = Date.now();
-//         const params:OrderParams = { symbol, side, type, timestamp };
-//         params[side === OrderSide.BUY ? 'quoteOrderQty' : 'quantity'] = quantity;
+    //MARKET ONLY
+    public newOrder(symbol:string, side:OrderSide, type:OrderType, quantity:number) {
+        const timestamp = Date.now();
+        const params:OrderParams = { symbol, side, type, timestamp };
+        params[side === OrderSide.BUY ? 'quoteOrderQty' : 'quantity'] = quantity;
 
-//         const signature = this._generateSignature(qs.stringify(params));
-//         console.log(params);
-//         return this.instance.post<unknown, OrderResponse>('/order', null, {
-//             params: {...params, signature},
-//         });
-//     }
+        const signature = this._generateSignature(qs.stringify(params));
+
+        return this.instance.post<unknown, OrderResponse>('/order', null, {
+            params: {...params, signature},
+        });
+    }
 
     public getExchangeInfo(symbols:string[]) {
         return this.instance.get<unknown, IExchangeInfo>('/exchangeInfo', {
