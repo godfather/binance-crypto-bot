@@ -4,8 +4,6 @@ export class Observable<T> {
     protected _observers: ObserverListener<T>[] = [];
     private _value:T;
     
-    // private constructor() {}
-
     public get value(): T {
         return this._value;
     }
