@@ -71,6 +71,10 @@ describe('Testing the symbol class\' methods', () => {
             }
         };
 
+
+        const symbol = await Symbol.build('BNBUSDT', 300, 1.2);
+        symbol.setStrategy(strategyDefinition);
+
         const testKline:ISocketKline = {
             stream:'test',
             data: {
@@ -85,7 +89,7 @@ describe('Testing the symbol class\' methods', () => {
                     "f": 100,       // First trade ID
                     "L": 200,       // Last trade ID
                     "o": "0.0010",  // Open price
-                    "c": "0.0020",  // Close price
+                    "c": symbol.candles[symbol.candles.length - 1].closePrice.toString(),  // Close price
                     "h": "0.0025",  // High price
                     "l": "0.0015",  // Low price
                     "v": "1000",    // Base asset volume
@@ -99,13 +103,7 @@ describe('Testing the symbol class\' methods', () => {
             }
         };
 
-        const symbol = await Symbol.build('BNBUSDT', 300, 1.2);
-        symbol.setStrategy(strategyDefinition);
         symbol.updateCandles(testKline);
         expect(symbol.triggerStatus).toBeDefined();
-
-        // symbol.updateCandles(testKline);
-        // expect(symbol.candles[symbol.candles.length - 1].closePrice).toEqual(0.0020);
-        // expect(symbol.candlesSize).toEqual(25);
     })
 });
