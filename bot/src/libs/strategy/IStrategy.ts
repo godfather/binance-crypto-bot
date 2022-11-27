@@ -7,11 +7,17 @@ export interface IStrategyDefinition {
 
 export type StrategyCallback = () => void;
 
+export enum EnumStrategyResponse {
+    BUY, 
+    SELL, 
+    WAIT
+}
+
 export interface IStrategy {
-    eventEmmiter: EventEmitter;
-    buyCallback: StrategyCallback;
-    sellCallback: StrategyCallback;
+    // eventEmmiter: EventEmitter;
+    // buyCallback: StrategyCallback;
+    // sellCallback: StrategyCallback;
     setParams(params: IStrategyDefinition): void;
-    runTrigger(): void;
-    destroy(): void;
+    runTrigger(values:number[]): EnumStrategyResponse;
+    // destroy(): void;
 }

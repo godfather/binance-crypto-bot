@@ -1,40 +1,41 @@
-import { IStrategy, IStrategyDefinition, StrategyCallback } from "./IStrategy";
-import EventEmitter from "events";
-import { OrderSide } from "../../models/iOrder";
+import { IStrategy, IStrategyDefinition, StrategyCallback, EnumStrategyResponse } from "./IStrategy";
+// import EventEmitter from "events";
+import { CalculationFacade } from "../calculations/CalculationFacade";
+import { Observable } from "../observer/Observable";
 
-type mmeStrategy = {
+interface mmeStrategy extends IStrategyDefinition {
     type: string;
     data: {
-        range: number;
-        mmeFast: number;
-        mmeSlow: number; 
+        fastRange: number;
+        slowRange: number;
     };
 }
 
 export class MobileAverageStrategy implements IStrategy {
     private _params: IStrategyDefinition;
+    private _fastEMA: number;
+    private _slowEMA: number;
+    private _values: number[];
 
-    public constructor(
-        public eventEmmiter: EventEmitter,
-        public buyCallback: StrategyCallback,
-        public sellCallback: StrategyCallback
-    ) {
-        this.eventEmmiter.on(OrderSide.BUY, this.buyCallback);
-        this.eventEmmiter.on(OrderSide.SELL, this.sellCallback);
-    }
+    public constructor() {}
 
     public setParams(params: mmeStrategy): MobileAverageStrategy {
         this._params = params;
         return this;
     }
-        
-    public runTrigger(): void {
-        if(this._params.data.mmeFast > this._params.data.mmeSlow) this.eventEmmiter.emit(OrderSide.BUY);
-        else if(this._params.data.mmeFast < this._params.data.mmeSlow) this.eventEmmiter.emit(OrderSide.SELL);
+
+    public runTrigger(values: number[]): EnumStrategyResponse {
+        this._values = values;
+        this._calculateEMA();
+
+        if(this._fastEMA > this._slowEMA) return EnumStrategyResponse.BUY;
+        else if(this._fastEMA < this._slowEMA) return EnumStrategyResponse.SELL;
+        return EnumStrategyResponse.WAIT;
     }
 
-    public destroy(): void {
-        this.eventEmmiter.removeListener(OrderSide.BUY, this.buyCallback);
-        this.eventEmmiter.removeListener(OrderSide.SELL, this.sellCallback);
+    private _calculateEMA(): void {
+        this._fastEMA = CalculationFacade.mme(this._values, this._params.data.fastRange).calc();
+        this._slowEMA = CalculationFacade.mme(this._values, this._params.data.slowRange).calc();
+        // console.table([this._fastEMA, this._slowEMA]);
     }
 }

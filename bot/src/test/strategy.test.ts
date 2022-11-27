@@ -1,25 +1,22 @@
 import { expect, describe, test, jest } from '@jest/globals';
-import EventEmitter from 'events';
 import { MobileAverageStrategy } from '../libs/strategy/MobileAverageStrategy';
+import { EnumStrategyResponse } from '../libs/strategy/IStrategy';
 
 describe('Testing Strategies', () => {
     test('Testing mobile average trigger', () => {
-        const symbol = 'BNBUSDT';
-        const eventEmmiter = new EventEmitter;
+        const mmeTestValues = [22.27, 22.19, 22.08, 22.17, 22.18, 22.13, 22.23, 22.43, 22.24, 22.29, 22.15, 22.39, 22.38, 22.61, 23.36, 24.05, 23.75, 23.83, 23.95, 23.63, 23.82, 23.87, 23.65, 23.19, 23.10];
+        
         const strategyDefinition = {
-            type: 'mm',
+            type: 'ema',
             data: {
-                range: 25,
-                mmeFast: 282.25045763344843,
-                mmeSlow: 282.24045763344843
+                fastRange: 7,
+                slowRange: 25,
             }
         }
         
-        const handlerCallback = jest.fn();
-        const mmStrategy = new MobileAverageStrategy(eventEmmiter, handlerCallback, handlerCallback);
+        const mmStrategy = new MobileAverageStrategy();
+        mmStrategy.setParams(strategyDefinition);
 
-        mmStrategy.setParams(strategyDefinition).runTrigger();
-
-        expect(handlerCallback).toBeCalledTimes(1);
+        expect(mmStrategy.runTrigger(mmeTestValues)).toEqual(EnumStrategyResponse.BUY);
     });
 });

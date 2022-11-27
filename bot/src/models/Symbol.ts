@@ -1,6 +1,8 @@
 import { ApiHelper } from "../api/api";
 import { CalculationFacade } from "../libs/calculations/CalculationFacade";
 import { Observable } from "../libs/observer/Observable";
+import { EnumStrategyResponse, IStrategy, IStrategyDefinition } from "../libs/strategy/IStrategy";
+import { StrategyFactory } from "../libs/strategy/StrategyFactory";
 import { Candle } from "./Candle";
 import { IKline, ISocketKline } from "./iKline";
 
@@ -9,6 +11,8 @@ export class Symbol {
     private _mms: number;
     private _mme: number;
     private _defaultKlineLimit: number;
+    private _strategy: IStrategy;
+    private _trigger: Observable<EnumStrategyResponse> = new Observable<EnumStrategyResponse>();
 
     //observable variables
     private _updateMetrics: Observable<boolean> = new Observable<boolean>();
@@ -27,6 +31,10 @@ export class Symbol {
         return this._candles.value.length;
     }
 
+    public get triggerStatus() {
+        return this._trigger.value;
+    }
+
     public get mms(): number {
         return this._mms;
     }
@@ -39,6 +47,11 @@ export class Symbol {
         return this._candles.value[this.candlesSize - 1].openTime;
     }
 
+    public setStrategy(strategyDefinition: IStrategyDefinition) {
+        this._strategy = StrategyFactory.build(strategyDefinition);
+    }
+
+    //remove this from here
     public calculateMMS(range:number): number {
         const values = this._candles.value.map(candle => candle.closePrice);
         this._mms = CalculationFacade.mms(values, range).calc();
@@ -46,6 +59,7 @@ export class Symbol {
         return this.mms;
     }
 
+    //remove this from here
     public calculateMME(range:number): number {
         const values = this._candles.value.map(candle => candle.closePrice);
         this._mme = CalculationFacade.mme(values, range).calc();
@@ -76,9 +90,9 @@ export class Symbol {
 
     private _observers() {
         this._candles.subscribe(_ => {
-            console.log('candles changed');
-            // console.table(candles);
+            if(!this._strategy) return;
+            const closePrices = this._candles.value.map(candle => candle.closePrice);
+            this._trigger.value = this._strategy.runTrigger(closePrices);
         });
     }
-
 }
