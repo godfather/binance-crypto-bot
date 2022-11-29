@@ -114,6 +114,14 @@ const orderSchema = new mongoose.Schema({
     ]
 }, {toJSON: {getters: true}});
 
+
+orderSchema.pre('save', function(this:IOrder, next) {
+    if(this.fills.length > 0) {
+        this.averagePrice = this.fills.reduce((price, fill) => price + (fill.price as number), 0) / this.fills.length;
+    }
+    next();
+})
+
 orderSchema.set('timestamps', true);
 
 export default conn.model<IOrder>('Order', orderSchema);
