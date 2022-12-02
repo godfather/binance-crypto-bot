@@ -33,6 +33,7 @@ export class MobileAverageStrategy implements IStrategy {
         return EnumStrategyResponse.WAIT;
     }
 
+    //update it to receive the last ema calculated;
     private _calculateEMA(): void {
         this._fastEMA = CalculationFacade.mme(this._values, this._params.data.fastRange).calc();
         this._slowEMA = CalculationFacade.mme(this._values, this._params.data.slowRange).calc();

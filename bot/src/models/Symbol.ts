@@ -5,14 +5,17 @@ import { EnumStrategyResponse, IStrategy, IStrategyDefinition } from "../libs/st
 import { StrategyFactory } from "../libs/strategy/StrategyFactory";
 import { Candle } from "./Candle";
 import { IKline, ISocketKline } from "./iKline";
+import { IExchangeInfo } from "./iExchangeInfo";
 
 export class Symbol {
     private _candles: Observable<Candle[]> = new Observable<Candle[]>();
+    private _exchangeInfo: IExchangeInfo;
     private _mms: number;
     private _mme: number;
     private _defaultKlineLimit: number;
     private _strategy: IStrategy;
     private _trigger: Observable<EnumStrategyResponse> = new Observable<EnumStrategyResponse>();
+    private _orderRunning: boolean;
 
     //observable variables
     private _updateMetrics: Observable<boolean> = new Observable<boolean>();
@@ -20,6 +23,7 @@ export class Symbol {
     public static build = async (symbol:string, volume:number, priceChangePercent:number): Promise<Symbol> => {
         const newSymbol = new Symbol(symbol, volume, priceChangePercent);
         await newSymbol._getKlines();
+        await newSymbol._getExcangeInfo();
         return newSymbol;
     }
 
@@ -29,6 +33,10 @@ export class Symbol {
 
     public get candlesSize(): number {
         return this._candles.value.length;
+    }
+
+    public get exchangeInfo(): IExchangeInfo {
+        return this._exchangeInfo;
     }
 
     public get triggerStatus() {
@@ -88,11 +96,23 @@ export class Symbol {
         this._candles.value = klines.map(kline => new Candle(kline, this.symbol));
     }
 
+    private async _getExcangeInfo() {
+        this._exchangeInfo = await ApiHelper.getInstance().getExchangeInfo([ this.symbol ]);
+    }
+
     private _observers() {
-        this._candles.subscribe(_ => {
+        this._candles.subscribe(candles => {
             if(!this._strategy) return;
-            const closePrices = this._candles.value.map(candle => candle.closePrice);
+            const closePrices = candles.map(candle => candle.closePrice);
             this._trigger.value = this._strategy.runTrigger(closePrices);
         });
+
+        this._trigger.subscribe(status => {
+            if(this._orderRunning) return;
+
+            if(status === EnumStrategyResponse.BUY) console.log('CREATE BUY ORDER');
+            else if(status === EnumStrategyResponse.SELL) console.log('CREATE SELL ORDER');
+            else console.log('WAIT');
+        })
     }
 }

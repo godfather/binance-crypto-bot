@@ -9,6 +9,6 @@ export abstract class OrderBase {
         public investiment: number
     ) {}
     
-    abstract newOrder(quantity: number):Promise<OrderResponse>;
+    abstract newOrder():Promise<IOrder | void>;
     abstract persistOrder(orderResponse: OrderResponse):Promise<IOrder>;
 }

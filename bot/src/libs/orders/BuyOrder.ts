@@ -4,8 +4,10 @@ import Order, { IOrder } from "../../models/Order";
 import { OrderBase } from "./OrderBase";
 
 export class BuyOrder extends OrderBase {
-    public newOrder(): Promise<OrderResponse> {
-        return ApiHelper.getPrivateInstance().newOrder(this.symbol, OrderSide.BUY, OrderType.MARKET, this.investiment);
+    public newOrder(): Promise<IOrder> {
+        return ApiHelper.getPrivateInstance()
+            .newOrder(this.symbol, OrderSide.BUY, OrderType.MARKET, this.investiment)
+            .then(orderResponse => this.persistOrder(orderResponse));
     }
 
     public persistOrder(orderResponse: OrderResponse): Promise<IOrder> {
