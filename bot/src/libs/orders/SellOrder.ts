@@ -5,17 +5,17 @@ import { OrderBase } from "./OrderBase";
 
 export class SellOrder extends OrderBase {
     private _currentPrice: number;
-    private _minNotional: number;
+    // private _minNotional: number;
 
     public setCurrentPrice(currentPrice:number): SellOrder {
         this._currentPrice = currentPrice;
         return this;
     }
 
-    public setMinNotional(minNotional: number): SellOrder {
-        this._minNotional = minNotional;
-        return this;
-    }
+    // public setMinNotional(minNotional: number): SellOrder {
+    //     this._minNotional = minNotional;
+    //     return this;
+    // }
 
     public newOrder(): Promise<IOrder | void> {
         return Order.find({ symbol:this.symbol, sold:false, side:OrderSide.BUY })
@@ -31,7 +31,7 @@ export class SellOrder extends OrderBase {
                 });
                 
                 const currentVolumePriceToSell = volumeToSell * this._currentPrice;
-                if(currentVolumePriceToSell < this._minNotional) return;
+                if(currentVolumePriceToSell < this.minNotional) return;
 
                 return ApiHelper.getPrivateInstance()
                     .newOrder(this.symbol, OrderSide.SELL, OrderType.MARKET, volumeToSell)

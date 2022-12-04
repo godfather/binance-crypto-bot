@@ -18,8 +18,8 @@ describe('Testing order classes', () => {
     });
 
     test('Testing sell order and database persistence', async () => {
-        const order = new SellOrder('BNBUSDT', parseFloat("10.00000000"));
-        const result = await order.setCurrentPrice(290).setMinNotional(parseFloat("10.00000000")).newOrder() as IOrder;
-        expect(result.cummulativeQuoteQty > 10).toEqual(true);
+        const order = new SellOrder('BNBUSDT', 10.00000000);
+        const result = await order.setCurrentPrice(290).newOrder() as IOrder;
+        expect(typeof result.orderId === 'number').toEqual(true);
     });
 });

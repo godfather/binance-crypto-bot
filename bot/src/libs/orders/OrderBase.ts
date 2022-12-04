@@ -6,7 +6,7 @@ import { IOrder } from "../../models/Order";
 export abstract class OrderBase {
     constructor(
         public symbol: string,
-        public investiment: number
+        public minNotional: number
     ) {}
     
     abstract newOrder():Promise<IOrder | void>;

@@ -5,7 +5,10 @@ import { EnumStrategyResponse, IStrategy, IStrategyDefinition } from "../libs/st
 import { StrategyFactory } from "../libs/strategy/StrategyFactory";
 import { Candle } from "./Candle";
 import { IKline, ISocketKline } from "./iKline";
-import { IExchangeInfo } from "./iExchangeInfo";
+import { EnumExangeInfoFilterType, IExchangeInfo } from "./iExchangeInfo";
+import { BuyOrder } from "../libs/orders/BuyOrder";
+import { SellOrder } from "../libs/orders/SellOrder";
+import { Wallet } from "./Wallet";
 
 export class Symbol {
     private _candles: Observable<Candle[]> = new Observable<Candle[]>();
@@ -109,10 +112,28 @@ export class Symbol {
 
         this._trigger.subscribe(status => {
             if(this._orderRunning) return;
+            this._orderRunning = true;
+            const filter = this._exchangeInfo.symbols[0].filters.find(filter => filter.filterType == EnumExangeInfoFilterType.MIN_NOTIONAL)!;
 
-            if(status === EnumStrategyResponse.BUY) console.log('CREATE BUY ORDER');
-            else if(status === EnumStrategyResponse.SELL) console.log('CREATE SELL ORDER');
-            else console.log('WAIT');
+            if(status === EnumStrategyResponse.BUY) {
+
+                Promise.resolve(new BuyOrder(this.symbol, parseFloat(filter.minNotional!))
+                    .newOrder()
+                    .then(_ => {
+                        this._orderRunning = false;
+                        Wallet.getInstance().updateWallet(_ => true);
+                    }));
+
+            } else if(status === EnumStrategyResponse.SELL) { 
+                Promise.resolve(new SellOrder(this.symbol, parseFloat(filter.minNotional!))
+                    .setCurrentPrice(this._candles.value[this.candlesSize -1].closePrice)
+                    .newOrder()
+                    .then(_ => {
+                        this._orderRunning = false;
+                        Wallet.getInstance().updateWallet(_ => true);
+                    }));
+            
+            }
         })
     }
 }

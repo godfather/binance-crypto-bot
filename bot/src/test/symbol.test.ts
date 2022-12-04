@@ -1,9 +1,11 @@
-import { expect, describe, test, jest } from '@jest/globals';
+import { expect, describe, test, jest, beforeEach } from '@jest/globals';
+import { ApiHelper } from '../api/api';
 import { EnumStrategyResponse } from '../libs/strategy/IStrategy';
 import { EnumExangeInfoFilterType } from '../models/iExchangeInfo';
 import { ISocketKline } from '../models/iKline';
 
 import { Symbol } from '../models/Symbol';
+import { Wallet } from '../models/Wallet';
 
 jest.setTimeout(10000);
 
@@ -64,7 +66,8 @@ describe('Testing the symbol class\' methods', () => {
         expect(symbol.candlesSize).toEqual(25);
     });
 
-    test('Testing if symbol strategy is running on candles update', async () => {
+    test('Testing if symbol strategy is running on candles update', done => {
+        // jest.useFakeTimers();
         const strategyDefinition = {
             type: 'ema',
             data: {
@@ -73,12 +76,27 @@ describe('Testing the symbol class\' methods', () => {
             }
         };
 
+        expect.assertions(2);
 
-        const symbol = await Symbol.build('BNBUSDT', 300, 1.2);
-        symbol.setStrategy(strategyDefinition);
+        ApiHelper.getPrivateInstance().getWalletInfo().then(wStatus => {
+            const wallet = Wallet.getInstance(wStatus);
+            return wallet;
+        }).then(wallet => {
+            const currentBNBBalance = wallet.status.balances.find(balance => balance.asset === 'BNB')!.free;    
+            console.log(currentBNBBalance);
 
-        testKline.data.k.c = symbol.candles[symbol.candles.length - 1].closePrice.toString(); // Close price
-        symbol.updateCandles(testKline);
-        expect(symbol.triggerStatus).toBeDefined();
+            Symbol.build('BNBUSDT', 300, 1.2).then(symbol => {
+                symbol.setStrategy(strategyDefinition);    
+                testKline.data.k.c = symbol.candles[symbol.candles.length - 1].closePrice.toString(); // Close price
+                symbol.updateCandles(testKline);
+                setTimeout(function() { 
+                    const newBNBBalance = wallet.status.balances.find(ballance => ballance.asset === 'BNB')!.free;
+                    console.log(currentBNBBalance, newBNBBalance);
+                    expect(newBNBBalance).not.toEqual(currentBNBBalance); 
+                    expect(symbol.triggerStatus).toBeDefined(); 
+                    done(); 
+                }, 5000);
+            });
+        });
     });
 });
