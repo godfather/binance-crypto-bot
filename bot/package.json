@@ -4,7 +4,7 @@
   "description": "",
   "main": "./dist/index.js",
   "scripts": {
-    "start": "nodemon ./dist/index.js",
+    "start": "nodemon ./dist/main.js",
     "start:test": "nodemon ./dist/test.js",
     "test": "jest"
   },
