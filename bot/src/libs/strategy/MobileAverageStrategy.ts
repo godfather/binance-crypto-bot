@@ -28,6 +28,8 @@ export class MobileAverageStrategy implements IStrategy {
         this._values = values;
         this._calculateEMA();
 
+        console.log(`FAST: ${this._fastEMA}  SLOW ${this._slowEMA}`);
+
         if(this._fastEMA > this._slowEMA) return EnumStrategyResponse.BUY;
         else if(this._fastEMA < this._slowEMA) return EnumStrategyResponse.SELL;
         return EnumStrategyResponse.WAIT;

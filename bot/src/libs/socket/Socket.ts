@@ -20,7 +20,7 @@ export abstract class Socket {
     }
 
     public start(): void {
-        if(this._apiAddress) throw new Error("Api addess was not defined.");
+        if(!this._apiAddress) throw new Error("Api addess was not defined.");
         
         this._ws = new WebSocket(this._apiAddress);
         this._heartbeat()

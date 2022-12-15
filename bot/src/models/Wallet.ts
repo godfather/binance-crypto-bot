@@ -7,6 +7,8 @@ export class Wallet {
     private static _instance: Wallet;
     public status: IWallet;
     public walletUpdatedAt: number;
+    private _walletUpdating: boolean;
+
 
     //singleton
     private constructor() {}
@@ -20,10 +22,15 @@ export class Wallet {
     }
 
     public updateWallet(callback:WalletCallback): void {
-        ApiHelper.getPrivateInstance().getWalletInfo().then(response => {
-            this._setStatus(response);
-            callback(response);
-        });
+        if(this._walletUpdating) return;
+        this._walletUpdating = true;
+        ApiHelper.getPrivateInstance().getWalletInfo()
+            .catch(console.log)
+            .then(response => {
+                this._setStatus(response!);
+                this._walletUpdating = false;
+                callback(response!);
+            });
     }
 
     private _setStatus(data:IWallet): void {

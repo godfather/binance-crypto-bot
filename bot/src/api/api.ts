@@ -28,14 +28,14 @@ export class ApiHelper extends BaseHttpClient {
         return this._privateInstance;
     }
 
-    public getLatestKlines(symbol:string, interval='1m', limit=15) {
+    public getLatestKlines(symbol:string, interval='1m', limit=15): Promise<IKline[]> {
         return this.instance.get<unknown, IKline[]>('/klines', {
             params: {
                 symbol:symbol, 
                 interval:interval,
                 limit:limit
             }
-        });
+        }).catch(this.errorHandler);
     }
 
     public getWalletInfo(): Promise<IWallet> {
@@ -43,30 +43,30 @@ export class ApiHelper extends BaseHttpClient {
         const signature = this._generateSignature(qs.stringify({ timestamp:timeStamp }));
         return this.instance.get<unknown, IWallet>('/account', {
             params: { timestamp:timeStamp, signature:signature },
-        });
+        }).catch(this.errorHandler);
     }
 
-    public getGainers() {
-        return this.instance.get<unknown, IGainer[]>('/ticker/24hr');
+    public getGainers(): Promise<IGainer[]> {
+        return this.instance.get<unknown, IGainer[]>('/ticker/24hr').catch(this.errorHandler);
     }
 
     //MARKET ONLY
-    public newOrder(symbol:string, side:OrderSide, type:OrderType, quantity:number) {
+    public newOrder(symbol:string, side:OrderSide, type:OrderType, quantity:number): Promise<OrderResponse> {
         const timestamp = Date.now();
         const params:OrderParams = { symbol, side, type, timestamp };
-        params[side === OrderSide.BUY ? 'quoteOrderQty' : 'quantity'] = quantity;
+        params[side === OrderSide.BUY ? 'quoteOrderQty' : 'quantity'] = parseFloat(quantity.toPrecision(8));
 
         const signature = this._generateSignature(qs.stringify(params));
 
         return this.instance.post<unknown, OrderResponse>('/order', null, {
             params: {...params, signature},
-        });
+        }).catch(this.errorHandler);
     }
 
-    public getExchangeInfo(symbols:string[]) {
+    public getExchangeInfo(symbols:string[]): Promise<IExchangeInfo> {
         return this.instance.get<unknown, IExchangeInfo>('/exchangeInfo', {
             params: { symbols:JSON.stringify(symbols) },
-        });
+        }).catch(this.errorHandler);
     }
 
 

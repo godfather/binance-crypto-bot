@@ -1,5 +1,4 @@
 import { IWallet } from "../../models/iWallet";
-import { ApiHelper } from "../../api/api";
 import { OrderResponse } from "../../models/iOrder";
 import { IOrder } from "../../models/Order";
 
