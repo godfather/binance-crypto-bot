@@ -8,7 +8,6 @@ import { MessageEvent } from "ws";
 import { ISocketKline } from './models/iKline';
 
 
-
 export class Main {
     private static _instance: Main;
     private static STABLE: string;
@@ -88,13 +87,9 @@ export class Main {
     }
 
     private _messageCallback(event: MessageEvent): void {
-        // if(!event.data.hasOwnProperty('data')) return;
-        // console.log(event.data);
-
         const klineData = JSON.parse(event.data.toString()) as unknown as ISocketKline;
         const currentSymbol = this.symbolsList.value.find(symbol => symbol.symbol == klineData.data.k.s);
 
-        
         if(!currentSymbol || currentSymbol.lastOpenTime === klineData.data.k.t) return;
         console.log(currentSymbol!.lastOpenTime, klineData.data.k.t);
         console.log(currentSymbol!.candlesSize, currentSymbol!.candles[currentSymbol!.candlesSize -1].closePrice, klineData.data.k.c);
