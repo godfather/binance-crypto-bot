@@ -20,6 +20,7 @@ export class Symbol {
     private _trigger: Observable<EnumStrategyResponse> = new Observable<EnumStrategyResponse>();
     private _orderRunning: boolean;
     private _lastOpenTime: number;
+    private _stopPrice: number;
 
     //observable variables
     private _updateMetrics: Observable<boolean> = new Observable<boolean>();
@@ -41,6 +42,10 @@ export class Symbol {
 
     public get lastOpenTime(): number {
         return this._lastOpenTime;
+    }
+
+    public get stopPrice(): number {
+        return this._stopPrice;
     }
 
     public get exchangeInfo(): IExchangeInfo {
@@ -100,8 +105,10 @@ export class Symbol {
     }
 
     private async _getKlines() {
+        console.log('_getKlines ' + this.symbol)
         const klines = await ApiHelper.getInstance().getLatestKlines(this.symbol, '1m', this._defaultKlineLimit);
         this._candles.value = klines.map(kline => new Candle(kline, this.symbol));
+        this._stopPrice = this._candles.value[this.candlesSize -1].closePrice;
     }
 
     private async _getExcangeInfo() {

@@ -6,6 +6,7 @@ import { Symbol } from "./models/Symbol";
 import { CryptoBot } from './libs/socket/CryptoBot';
 import { MessageEvent } from "ws";
 import { ISocketKline } from './models/iKline';
+import { Socket } from './libs/socket/Socket';
 
 
 export class Main {
@@ -14,11 +15,14 @@ export class Main {
     public symbolsList: Observable<Symbol[]>;
     public wallet: Observable<Wallet>;
     private _socketUrl:Observable<string>;
+    private _cryptoBot: Socket;
+    private _initialized: boolean;
 
     private constructor() {
         this.symbolsList = new Observable<Symbol[]>();
         this.wallet = new Observable<Wallet>();
         this._socketUrl = new Observable<string>();
+        this._initialized = false;
     };
 
     public static getInstance(stable: string) {
@@ -30,19 +34,11 @@ export class Main {
     public run() {
         this._getWallet().then(wallet => {
             this.wallet.value = wallet;
-
-            this._getGeiners().then(symbols => {
-                symbols.forEach(s => s.setStrategy(
-                    {
-                        type: 'ema',
-                        data: {
-                            fastRange: 7,
-                            slowRange: 25
-                        }
-                    }
-                ))
-                this.symbolsList.value = symbols;
-            });
+            this._initGainers();
+            // this._getGainers().then(symbols => {
+            //     if(!symbols || symbols.length < 1) return;
+            //     return this._setupSymbols(symbols!);
+            // });
         });
         
         this._observers();
@@ -54,7 +50,7 @@ export class Main {
                 .then(walletinfo => Wallet.getInstance(walletinfo!));
     }
 
-    private async _getGeiners(): Promise<Symbol[]> {
+    private async _getGainers(): Promise<void | Symbol[]> {
         const stabelRegex = new RegExp(`${Main.STABLE}$`);
         return ApiHelper.getInstance().getGainers()
             .catch(console.log)
@@ -68,12 +64,46 @@ export class Main {
                     return await Symbol.build(gainer.symbol, parseFloat(gainer.volume), parseFloat(gainer.priceChangePercent));
                 });
             })
-            .then(symbols => Promise.all(symbols))
+            .then(symbols => {
+                if(symbols.length < 1) return;
+                return Promise.all(symbols)
+            })
+    }
+
+    private _initGainers() {
+        setTimeout(() => {
+            console.log('aqui ' + this._initialized);
+            this._initialized = true;
+
+            this._getGainers().then(symbols => {
+                if(!symbols || symbols.length < 1) {
+                    console.log('Symbols List is empty...');
+                    return this._initGainers();
+                }
+                return this._setupSymbols(symbols!);
+            });
+
+        }, (!this._initialized ? 10 : 60 * 10 * 1000));
+    }
+
+    private _setupSymbols(symbols: Symbol[]): void {
+        if(symbols.length < 1) return;
+
+        symbols.forEach(s => s.setStrategy({
+            type: 'ema',
+            data: { fastRange: 7, slowRange: 25 }
+        }));
+
+        this.symbolsList.value = symbols;
     }
 
     private _observers() {
         this.symbolsList.subscribe(symbols => {
-            if(symbols.length < 1) return;             
+            if(symbols.length < 1) {
+                console.log('Symbols List is empty...');
+                return this._initGainers();             
+            }
+
             this._mountSocketUrl(symbols);
         });
 
@@ -81,8 +111,12 @@ export class Main {
 
         this._socketUrl.subscribe(url => {
             console.log(url);
-            const cryptoBot = new CryptoBot(url, this._messageCallback.bind(this));
-            cryptoBot.run();
+            console.log('Restarting Bot...');
+            if(this._cryptoBot) this._cryptoBot.stop();
+            setTimeout(() => {
+                this._cryptoBot = new CryptoBot(url, this._messageCallback.bind(this));
+                this._cryptoBot.run();
+            }, 1000);
         });
     }
 
@@ -91,6 +125,12 @@ export class Main {
         const currentSymbol = this.symbolsList.value.find(symbol => symbol.symbol == klineData.data.k.s);
 
         if(!currentSymbol || currentSymbol.lastOpenTime === klineData.data.k.t) return;
+
+        if(currentSymbol.stopPrice > parseFloat(klineData.data.k.c)) {
+            this.symbolsList.value = this.symbolsList.value.filter(symbol => symbol.symbol != currentSymbol.symbol);
+            return;
+        }
+
         console.log(currentSymbol!.lastOpenTime, klineData.data.k.t);
         console.log(currentSymbol!.candlesSize, currentSymbol!.candles[currentSymbol!.candlesSize -1].closePrice, klineData.data.k.c);
 
