@@ -88,11 +88,16 @@ export class Symbol {
         return this.mme;
     }
 
-    public updateCandles(kline:ISocketKline|IKline) {
+    public updateCandles(kline:ISocketKline|IKline): void {
         const candle = new Candle(kline, this.symbol);
         if(this._candles.value.length === this._defaultKlineLimit) this._candles.value.shift();
         this._candles.value.push(candle);
         this._candles.value = this._candles.value;
+    }
+
+    public stopSymbolBot(): Promise<void> {
+        this._trigger.value = EnumStrategyResponse.SELL;
+        return new Promise<void>(resolve => resolve());
     }
 
     private constructor(
