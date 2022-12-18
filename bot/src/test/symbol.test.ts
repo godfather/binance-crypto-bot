@@ -40,21 +40,10 @@ describe('Testing the symbol class\' methods', () => {
 
     test('testing symbol creation', async () => {
         const symbol = await Symbol.build('BNBUSDT', 300, 1.2);
+        const filter = symbol.exchangeInfo.symbols[0].filters.find(filter => filter.filterType == EnumExangeInfoFilterType.MIN_NOTIONAL);
         expect.assertions(2);
         expect(symbol.candlesSize).toEqual(25);
-        expect(symbol.exchangeInfo.symbols[0].filters[3].filterType).toEqual(EnumExangeInfoFilterType.MIN_NOTIONAL);
-    });
-
-    test('testing symbol mms calc', async () => {
-        const symbol = await Symbol.build('BNBUSDT', 300, 1.2);
-        const mms = symbol.calculateMMS(7);
-        expect(mms > 0).toEqual(true);        
-    });
-
-    test('testing symbol mme calc', async () => {
-        const symbol = await Symbol.build('BNBUSDT', 300, 1.2);
-        const mme = symbol.calculateMME(7);
-        expect(mme > 0).toEqual(true);        
+        expect(filter!.filterType).toEqual(EnumExangeInfoFilterType.MIN_NOTIONAL);
     });
 
     test('testing updating symbols candles', async () => {

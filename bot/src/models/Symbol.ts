@@ -13,8 +13,6 @@ import { Wallet } from "./Wallet";
 export class Symbol {
     private _candles: Observable<Candle[]> = new Observable<Candle[]>();
     private _exchangeInfo: IExchangeInfo;
-    private _mms: number;
-    private _mme: number;
     private _defaultKlineLimit: number;
     private _strategy: IStrategy;
     private _trigger: Observable<EnumStrategyResponse> = new Observable<EnumStrategyResponse>();
@@ -56,36 +54,12 @@ export class Symbol {
         return this._trigger.value;
     }
 
-    public get mms(): number {
-        return this._mms;
-    }
-
-    public get mme(): number {
-        return this._mme;
-    }
-
     public get openTime(): number {
         return this._candles.value[this.candlesSize - 1].openTime;
     }
 
     public setStrategy(strategyDefinition: IStrategyDefinition) {
         this._strategy = StrategyFactory.build(strategyDefinition);
-    }
-
-    //remove this from here
-    public calculateMMS(range:number): number {
-        const values = this._candles.value.map(candle => candle.closePrice);
-        this._mms = CalculationFacade.mms(values, range).calc();
-        // console.log(this.mms);
-        return this.mms;
-    }
-
-    //remove this from here
-    public calculateMME(range:number): number {
-        const values = this._candles.value.map(candle => candle.closePrice);
-        this._mme = CalculationFacade.mme(values, range).calc();
-        // console.log(this.mme);
-        return this.mme;
     }
 
     public updateCandles(kline:ISocketKline|IKline): void {
