@@ -127,7 +127,10 @@ export class Main {
         if(!currentSymbol || currentSymbol.lastOpenTime === klineData.data.k.t) return;
 
         if(currentSymbol.stopPrice > parseFloat(klineData.data.k.c)) {
-            this.symbolsList.value = this.symbolsList.value.filter(symbol => symbol.symbol != currentSymbol.symbol);
+            console.log(`REMOVING SYMBOL ${currentSymbol.symbol}\n STOP PRICE: ${currentSymbol.stopPrice} CURRENT PRICE: ${klineData.data.k.c}`);
+            currentSymbol.stopSymbolBot().then(() => {
+                this.symbolsList.value = this.symbolsList.value.filter(symbol => symbol.symbol != currentSymbol.symbol);
+            });            
             return;
         }
 
@@ -143,4 +146,4 @@ export class Main {
     }
 }
 
-Main.getInstance('USDT').run();
+Main.getInstance('BNB').run();
