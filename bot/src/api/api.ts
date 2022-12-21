@@ -56,6 +56,8 @@ export class ApiHelper extends BaseHttpClient {
         const params:OrderParams = { symbol, side, type, timestamp };
         params[side === OrderSide.BUY ? 'quoteOrderQty' : 'quantity'] = parseFloat(quantity.toPrecision(8));
 
+        console.table(params);
+
         const signature = this._generateSignature(qs.stringify(params));
 
         return this.instance.post<unknown, OrderResponse>('/order', null, {

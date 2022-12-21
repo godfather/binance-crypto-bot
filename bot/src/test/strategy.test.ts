@@ -17,6 +17,6 @@ describe('Testing Strategies', () => {
         const mmStrategy = new MobileAverageStrategy();
         mmStrategy.setParams(strategyDefinition);
 
-        expect(mmStrategy.runTrigger(mmeTestValues)).toEqual(EnumStrategyResponse.BUY);
+        expect(mmStrategy.runTrigger(mmeTestValues, 2, 1)).toEqual(EnumStrategyResponse.SELL);
     });
 });

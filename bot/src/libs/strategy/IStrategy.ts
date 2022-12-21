@@ -18,6 +18,6 @@ export interface IStrategy {
     // buyCallback: StrategyCallback;
     // sellCallback: StrategyCallback;
     setParams(params: IStrategyDefinition): void;
-    runTrigger(values:number[]): EnumStrategyResponse;
+    runTrigger(values:number[], round: number, target: number): EnumStrategyResponse;
     // destroy(): void;
 }
