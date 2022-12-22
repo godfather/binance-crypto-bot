@@ -31,11 +31,6 @@ export class MobileAverageStrategy implements IStrategy {
             return EnumStrategyResponse.WAIT;
         }
 
-        if(!Wallet.getInstance().hasFounds) {
-            console.log('EnumStrategyResponse.WAIT');
-            return EnumStrategyResponse.WAIT;
-        }
-
         this._values = values;
         this._calculateEMA();
 
@@ -50,17 +45,15 @@ export class MobileAverageStrategy implements IStrategy {
                 return EnumStrategyResponse.SELL;
             } 
 
-            // console.table({
-            //     round: round,
-            //     roundMode: (round % 3),
-            //     currentClosePrice: currentClosePrice,
-            //     lastClosePrice: lastClosePrice
-            // });
-
             if(round > 0 && currentClosePrice >= target) {
                 console.log(`SELLING ON THIRD ROUND CCP ${currentClosePrice} | TP ${target}`);
                 return EnumStrategyResponse.SELL;
             }
+
+            if(!Wallet.getInstance().hasFounds) {
+                console.log('EnumStrategyResponse.WAIT');
+                return EnumStrategyResponse.WAIT;
+            }    
 
             return EnumStrategyResponse.BUY;
         } else if(this._fastEMA < this._slowEMA) return EnumStrategyResponse.SELL;
