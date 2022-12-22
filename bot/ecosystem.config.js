@@ -1,7 +1,7 @@
 module.exports = {
   apps : [{
     name   : "BOT",
-    script : "./dist/index.js",
+    script : "./dist/main.js",
     cwd: '/bot',
     instances: 1,
     autorestart: true,
