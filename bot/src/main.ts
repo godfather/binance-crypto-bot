@@ -58,6 +58,7 @@ export class Main {
                 })
                 .filter(gainer => parseFloat(gainer.priceChangePercent) > 0)
                 .filter(gainer => stabelRegex.test(gainer.symbol))
+                .slice(0,3)
                 .map(async gainer => {
                     return await Symbol.build(gainer.symbol, parseFloat(gainer.volume), parseFloat(gainer.priceChangePercent));
                 });
