@@ -10,6 +10,10 @@ export class Wallet {
     private _walletUpdating: boolean;
 
 
+    public get hasFounds(): boolean {
+        return parseFloat(this.status.balances.find(balance => balance.asset === 'USDT')!.free) >= 1;
+    }
+
     //singleton
     private constructor() {}
 

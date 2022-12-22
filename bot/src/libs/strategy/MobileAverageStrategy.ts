@@ -2,6 +2,7 @@ import { IStrategy, IStrategyDefinition, StrategyCallback, EnumStrategyResponse 
 // import EventEmitter from "events";
 import { CalculationFacade } from "../calculations/CalculationFacade";
 import { Observable } from "../observer/Observable";
+import { Wallet } from "../../models/Wallet";
 
 interface mmeStrategy extends IStrategyDefinition {
     type: string;
@@ -26,6 +27,11 @@ export class MobileAverageStrategy implements IStrategy {
 
     public runTrigger(values: number[], round: number, target: number): EnumStrategyResponse {
         if(round < 3) {
+            console.log('EnumStrategyResponse.WAIT');
+            return EnumStrategyResponse.WAIT;
+        }
+
+        if(!Wallet.getInstance().hasFounds) {
             console.log('EnumStrategyResponse.WAIT');
             return EnumStrategyResponse.WAIT;
         }
