@@ -106,13 +106,13 @@ export class Main {
             this._mountSocketUrl(symbols);
         });
 
-        this.wallet.subscribe(wallet => console.table(wallet.status.balances));
+        this.wallet.subscribe(wallet => console.table(wallet.status.balances)); //TODO: remove this log
 
         this._socketUrl.subscribe(url => {
             console.log(url);
             if(this._socketRoundCount > 1) console.log('Restarting Bot...');
 
-            if(this._cryptoBot) this._cryptoBot.stop();
+            if(this._cryptoBot) this._cryptoBot.stop(); //TODO: set cryptobot to null and 
             setTimeout(() => {
                 this._cryptoBot = new CryptoBot(url, this._messageCallback.bind(this));
                 this._cryptoBot.run();
@@ -128,7 +128,7 @@ export class Main {
         console.log(currentSymbol.round)
         
         if((currentSymbol.round > 2 && 
-            currentSymbol.stopPrice > parseFloat(klineData.data.k.c)) ||
+            currentSymbol.stopPrice > parseFloat(klineData.data.k.c)) || //TODO: remove this condition
             currentSymbol.stagnedRouds >= 30) {
             
             console.log('STAGNED ROUND: ' + currentSymbol.stagnedRouds);
@@ -144,7 +144,7 @@ export class Main {
         console.log(`CTime: ${currentSymbol!.lastOpenTime}, KTime ${klineData.data.k.t}`);
         // console.log(currentSymbol!.candlesSize, currentSymbol.candles[currentSymbol!.candlesSize -1].closePrice, klineData.data.k.c);
 
-        currentSymbol.updateCandles(klineData);
+        currentSymbol.updateCandles(klineData); //TODO: if the current symbol was removed, it can't be updated
     }
 
     private _mountSocketUrl(symbols: Symbol[]): void {
