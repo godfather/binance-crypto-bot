@@ -142,8 +142,6 @@ export class Main {
         }
 
         console.log(`CTime: ${currentSymbol!.lastOpenTime}, KTime ${klineData.data.k.t}`);
-        // console.log(currentSymbol!.candlesSize, currentSymbol.candles[currentSymbol!.candlesSize -1].closePrice, klineData.data.k.c);
-
         currentSymbol.updateCandles(klineData); //TODO: if the current symbol was removed, it can't be updated
     }
 

@@ -5,18 +5,12 @@ import { OrderBase } from "./OrderBase";
 
 export class SellOrder extends OrderBase {
     private _currentPrice: number;
-    // private _minNotional: number;
 
     public setCurrentPrice(currentPrice:number): SellOrder {
         this._currentPrice = currentPrice;
         console.log('this._currentPrice ' + this._currentPrice);
         return this;
     }
-
-    // public setMinNotional(minNotional: number): SellOrder {
-    //     this._minNotional = minNotional;
-    //     return this;
-    // }
 
     public newOrder(): Promise<IOrder | void> {
         return Order.find({ symbol:this.symbol, sold:false, side:OrderSide.BUY })

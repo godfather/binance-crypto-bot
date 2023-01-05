@@ -64,6 +64,5 @@ export class MobileAverageStrategy implements IStrategy {
     private _calculateEMA(): void {
         this._fastEMA = CalculationFacade.mme(this._values, this._params.data.fastRange).calc();
         this._slowEMA = CalculationFacade.mme(this._values, this._params.data.slowRange).calc();
-        // console.table([this._fastEMA, this._slowEMA]);
     }
 }
