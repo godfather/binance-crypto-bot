@@ -15,6 +15,11 @@ describe("testing api endpoints", () => {
         expect(typeof gainers[0].closeTime).toBe('number');
     });
 
+    test("get symbol ticker data", async () => {
+        const gainers = await ApiHelper.getInstance().getGainers(['BTCUSDT']);
+        expect(typeof gainers[0].closeTime).toBe('number');
+    });
+
     test("get last 25 klines from a symbol", async () => {
         const klines = await ApiHelper.getInstance().getLatestKlines('BTCUSDT', '1m', 25);
         expect(klines.length).toEqual(25);
