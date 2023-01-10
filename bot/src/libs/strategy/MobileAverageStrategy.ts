@@ -9,6 +9,7 @@ interface mmeStrategy extends IStrategyDefinition {
     data: {
         fastRange: number;
         slowRange: number;
+        longRange: number;
     };
 }
 
@@ -16,6 +17,7 @@ export class MobileAverageStrategy implements IStrategy {
     private _params: IStrategyDefinition;
     private _fastEMA: number;
     private _slowEMA: number;
+    private _longEMA: number;
     private _values: number[];
 
     public constructor() {}
@@ -34,7 +36,7 @@ export class MobileAverageStrategy implements IStrategy {
         this._values = values;
         this._calculateEMA();
 
-        console.log(`FAST: ${this._fastEMA}  SLOW ${this._slowEMA}`);
+        console.log(`FAST: ${this._fastEMA}  SLOW ${this._slowEMA}  LONG ${this._longEMA}`);
 
         if(this._fastEMA > this._slowEMA) {
             const lastClosePrice = values[values.length - 2];
@@ -64,5 +66,6 @@ export class MobileAverageStrategy implements IStrategy {
     private _calculateEMA(): void {
         this._fastEMA = CalculationFacade.mme(this._values, this._params.data.fastRange).calc();
         this._slowEMA = CalculationFacade.mme(this._values, this._params.data.slowRange).calc();
+        this._longEMA = CalculationFacade.mme(this._values, this._params.data.longRange).calc();
     }
 }

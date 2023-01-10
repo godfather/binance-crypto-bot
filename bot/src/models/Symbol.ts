@@ -72,7 +72,7 @@ export class Symbol {
         public symbol:string, 
         public volume:number, 
         public priceChangePercent:number) {
-            this._defaultKlineLimit = 25;
+            this._defaultKlineLimit = 100;
             this._updateMetrics.value = false;
             this._round = 0;
             this._stagnedRounds = 0;

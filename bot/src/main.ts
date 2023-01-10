@@ -90,7 +90,7 @@ export class Main {
 
         symbols.forEach(s => s.setStrategy({
             type: 'ema',
-            data: { fastRange: 7, slowRange: 25 }
+            data: { fastRange: 25, slowRange: 50, longRange: 100 }
         }));
 
         this.symbolsList.value = symbols;
