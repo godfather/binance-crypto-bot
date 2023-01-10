@@ -46,8 +46,9 @@ export class ApiHelper extends BaseHttpClient {
         }).catch(this.errorHandler);
     }
 
-    public getGainers(): Promise<IGainer[]> {
-        return this.instance.get<unknown, IGainer[]>('/ticker/24hr').catch(this.errorHandler);
+    public getGainers(symbolsList?: string[]): Promise<IGainer[]> {
+        const params = symbolsList ? { params: { symbols: JSON.stringify(symbolsList) }} : {};
+        return this.instance.get<unknown, IGainer[]>('/ticker/24hr', params).catch(this.errorHandler);
     }
 
     //MARKET ONLY
