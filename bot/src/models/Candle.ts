@@ -3,6 +3,10 @@ import { IKline, ISocketKline } from "./iKline";
 export class Candle {
     private _closePrice:number;
     private _openPrice: number
+    private _minPrice: number;
+    private _maxPrice: number;
+    private _diffMaxMin: number;
+    private _diffOpenClose: number;
     private _openTime:number;
 
     constructor(public data:IKline|ISocketKline, private _symbol:string) {
@@ -19,6 +23,30 @@ export class Candle {
 
     public get openPrice(): number {
         return this._openPrice;
+    }
+
+    public get minPrice(): number {
+        return this._minPrice;
+    }
+
+    public get maxPrice(): number {
+        return this._maxPrice;
+    }
+
+    public get amplitude():number {
+        return (this._maxPrice - this._minPrice) * 100 / this._minPrice;
+    }
+
+    public get variation():number {
+        if(this._openPrice > this._closePrice) {
+            return (this._closePrice * 100 / this._openPrice) - 100;
+        }
+
+        if(this._openPrice < this._closePrice) {
+            return (this._closePrice - this._openPrice) * 100 / this._openPrice;
+        }
+
+        return 0;
     }
 
     public get openTime():number {
