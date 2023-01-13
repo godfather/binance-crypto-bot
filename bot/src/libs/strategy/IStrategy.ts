@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import { Candle } from '../../models/Candle';
 
 export interface IStrategyDefinition {
     type:string;
@@ -18,6 +19,6 @@ export interface IStrategy {
     // buyCallback: StrategyCallback;
     // sellCallback: StrategyCallback;
     setParams(params: IStrategyDefinition): void;
-    runTrigger(values:number[], round: number, target: number): EnumStrategyResponse;
+    runTrigger(candles: Candle[], round: number, stop: number, target: number, holding: boolean): EnumStrategyResponse;
     // destroy(): void;
 }

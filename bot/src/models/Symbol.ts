@@ -15,10 +15,11 @@ export class Symbol {
     private _strategy: IStrategy;
     private _orderRunning: boolean;
     private _lastOpenTime: number;
-    private _stopPrice: number;
     private _round: number; //how many rounds symbol is running;
     private _stagnedRounds: number;
-    private _target: number;
+    private _targetPrice: number;
+    private _stopPrice: number;
+    private _holding: boolean;
     
     //observable variables
     private _candles: Observable<Candle[]> = new Observable<Candle[]>();
@@ -77,6 +78,7 @@ export class Symbol {
             this._round = 0;
             this._stagnedRounds = 0;
             this._orderRunning = false;
+            this._holding = false;
             this._observers();
     }
 
@@ -104,7 +106,8 @@ export class Symbol {
         this._candles.value = klines.map(kline => new Candle(kline, this.symbol));
         this._stopPrice = this._candles.value[this.candlesSize -1].closePrice;
         this._lastOpenTime = this._candles.value[this.candlesSize -1].openTime;
-        this._target = this._getTarget();
+        this._targetPrice = this._getTarget();
+        this._stopPrice = this._getStop();
     }
 
     private async _getExcangeInfo() {
@@ -113,10 +116,11 @@ export class Symbol {
 
     private _getTarget() {
         const candle = this.candles[this.candlesSize - 1];
-        const diff = candle.closePrice - candle.openPrice;
-        const target = diff <= 0 ? (candle.closePrice + (candle.closePrice * 0.05)) : (diff * 3) + candle.closePrice;
-        console.log(`UPDATE TARGET ${this.symbol}: T = ${target}; CP = ${candle.closePrice}; OP = ${candle.openPrice}; DIFF = ${diff}`);
-        return target;
+        return candle.closePrice + (candle.size * 1.5);
+    }
+
+    private _getStop() {
+        return this.candles[this.candlesSize - 1].minPrice;
     }
 
     private _updateStagnedRoundCounter(closePrices: number[]): number {
@@ -136,7 +140,7 @@ export class Symbol {
 
             this._updateStagnedRoundCounter(closePrices);
 
-            this._trigger.value = this._strategy.runTrigger(closePrices, this._round, this._target);
+            this._trigger.value = this._strategy.runTrigger(closePrices, this._round, this._stopPrice, this._targetPrice, this._holding);
         });
 
         this._trigger.subscribe(status => {
@@ -168,7 +172,7 @@ export class Symbol {
                     .newOrder()
                     .then(_ => {
                         this._orderRunning = false;
-                        this._target = this._getTarget();
+                        this._targetPrice = this._getTarget();
                         Wallet.getInstance().updateWallet(_ => true);
                     })
                     .catch(response => {
