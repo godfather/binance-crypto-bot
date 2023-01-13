@@ -37,6 +37,14 @@ export class Candle {
         return (this._maxPrice - this._minPrice) * 100 / this._minPrice;
     }
 
+    public get size():number {
+        return this._maxPrice - this._minPrice;
+    }
+
+    public get diffOpenClose():number {
+        return this._openPrice - this._closePrice;
+    }
+
     public get variation():number {
         if(this._openPrice > this._closePrice) {
             return (this._closePrice * 100 / this._openPrice) - 100;
