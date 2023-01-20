@@ -16,12 +16,14 @@ export class AverageCalculation implements ICalculation {
     }
     
     addValues(values: number[]): ICalculation {
-        this.values = values;
+        this.values = values.filter(value => value !== undefined);
         return this;
     }
     
     calc(): number {
-        this._simpleAverage = this.values.reduce((total, current) => total + current, 0) / (this._range || this.values.length);
+        let division = this._range && this._range <= this.values.length ? this._range : this.values.length;
+
+        this._simpleAverage = this.values.reduce((total, current) => total + current, 0) / division;
         return this.simpleAverage;
     }
     
