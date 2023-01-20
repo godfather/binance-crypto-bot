@@ -17,6 +17,10 @@ export class MMSCalculation implements ICalculation {
         return this._mmsValues[this._mmsValues.length -1]; 
     }
 
+    public get mmsValues() {
+        return this._mmsValues;
+    }
+
     public addValues(values: number[]): ICalculation {
         if(values) this.values = values;
         return this;
@@ -35,8 +39,6 @@ export class MMSCalculation implements ICalculation {
         for(let i = 0; (i + this._range - 1) < this.values.length; i++) {
             this._mmsValues.push(this._avg.addValues(this.values.slice(i, i + this._range)).calc());
         }
-
-        // console.table(this._mmsValues);
 
         return this.currentMMS;
     }
