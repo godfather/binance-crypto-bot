@@ -4,6 +4,9 @@ import { RSICalculation } from "../libs/calculations/RSICalculation";
 import { CalculationFacade } from "../libs/calculations/CalculationFacade";
 
 import { test, describe, expect } from '@jest/globals';
+import { ApiHelper } from "../api/api";
+import { Candle } from "../models/Candle";
+import { ADXCalculation } from "../libs/calculations/ADXCalculation";
 
 //test values
 
@@ -117,5 +120,31 @@ describe("testing CalculationFacade", () => {
         const range = 14;
         const rsi = CalculationFacade.rsi(values, range);
         expect(rsi.calc()).toEqual(55.2317220630741)
+    });
+
+    test("test ADX facade", async () => {
+        const range = 14;
+        const symbol = 'BTCBUSD';
+        // const klines = await ApiHelper.getInstance().getLatestKlines(symbol, '1m', 100);
+
+        // const candles = klines.map(kline => new Candle(kline, symbol));
+
+        const candles = [
+            new Candle(['1674011340000', '0', '90', '82', '87'], symbol),
+            new Candle(['1674011340000', '0', '95', '85', '87'], symbol),
+            new Candle(['1674011340000', '0', '105', '93', '97'], symbol),
+            new Candle(['1674011340000', '0', '120', '106', '114'], symbol),
+            new Candle(['1674011340000', '0', '140', '124', '133'], symbol),
+            new Candle(['1674011340000', '0', '165', '147', '157'], symbol),
+            new Candle(['1674011340000', '0', '195', '175', '186'], symbol),
+            new Candle(['1674011340000', '0', '230', '204', '223'], symbol),
+            new Candle(['1674011340000', '0', '270', '246', '264'], symbol),
+            new Candle(['1674011340000', '0', '315', '289', '311'], symbol),
+            new Candle(['1674011340000', '0', '365', '337', '350'], symbol),
+        ];
+
+        const adx = CalculationFacade.adx(candles, 5) as ADXCalculation;
+        // console.table(adx.values);
+        expect(adx.values[adx.values.length - 1].positiveDI).toEqual(83.74053399387346);
     });
 })
