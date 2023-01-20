@@ -3,6 +3,8 @@ import { MMECalculation } from "./MMECalculation";
 import { RSICalculation } from "./RSICalculation";
 import { AverageCalculation } from "./AverageCalculation";
 import { ICalculation } from "./ICalculation";
+import { Candle } from "../../models/Candle";
+import { ADXCalculation } from "./ADXCalculation";
 
 
 export abstract class CalculationFacade {
@@ -28,5 +30,10 @@ export abstract class CalculationFacade {
     public static rsi(values: number[], range: number): ICalculation {
         const rsi = new RSICalculation();
         return rsi.addValues(values).addRange(range);
+    }
+
+    public static adx(candles: Candle[], range: number): ADXCalculation {
+        const adx = new ADXCalculation();
+        return adx.addRange(range).addCandles(candles);
     }
 }
