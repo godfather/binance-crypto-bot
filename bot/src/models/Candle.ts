@@ -5,9 +5,18 @@ export class Candle {
     private _openPrice: number
     private _minPrice: number;
     private _maxPrice: number;
-    private _diffMaxMin: number;
     private _diffOpenClose: number;
     private _openTime:number;
+
+    public trueRange: number;
+    public positiveDM: number;
+    public negativeDM: number;
+    public smoothedPositiveDM: number;
+    public smoothedNegativeDM: number;
+    public smoothedTrueRange: number;
+    // public dx: number;
+    public ADX: number;
+
 
     constructor(public data:IKline|ISocketKline, private _symbol:string) {
         this._processData(data);
@@ -25,11 +34,11 @@ export class Candle {
         return this._openPrice;
     }
 
-    public get minPrice(): number {
+    public get lowPrice(): number {
         return this._minPrice;
     }
 
-    public get maxPrice(): number {
+    public get highPrice(): number {
         return this._maxPrice;
     }
 
@@ -61,16 +70,32 @@ export class Candle {
         return this._openTime;
     }
 
+    public get positiveDI(): number {
+        return this._normalizeIndicator(this.smoothedPositiveDM, this.smoothedTrueRange);
+    }
+
+    public get negativeDI(): number {
+        return this._normalizeIndicator(this.smoothedNegativeDM, this.smoothedTrueRange);
+    }
+
+    public get DX(): number {
+        return (Math.abs(this.smoothedPositiveDM - this.smoothedNegativeDM) / Math.abs((this.smoothedPositiveDM + this.smoothedNegativeDM))) * 100;
+    }
+
     private _processKline(data:IKline): void {
         this._openTime = data[0] as number;
-        this._closePrice = parseFloat(data[4] as string);
         this._openPrice = parseFloat(data[1] as string);
+        this._maxPrice = parseFloat(data[2] as string);
+        this._minPrice = parseFloat(data[3] as string);
+        this._closePrice = parseFloat(data[4] as string);
     }
 
     private _processSocketKline(data:ISocketKline): void {
         this._openTime = data.data.k.t;
         this._closePrice = parseFloat(data.data.k.c);
         this._openPrice = parseFloat(data.data.k.o);
+        this._minPrice = parseFloat(data.data.k.l);
+        this._maxPrice = parseFloat(data.data.k.h);
     }
 
     private _processData(data:IKline|ISocketKline): void {
@@ -79,5 +104,10 @@ export class Candle {
 
     private _isSocketData(data:IKline|ISocketKline): boolean {
         return (data as ISocketKline).data !== undefined;
+    }
+
+    private _normalizeIndicator(dmIndicator: number, trueRange: number): number {
+        if(dmIndicator === 0 || trueRange === 0) return 0;
+        return (dmIndicator / trueRange) * 100;
     }
 }
