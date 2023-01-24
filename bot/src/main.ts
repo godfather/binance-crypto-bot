@@ -50,7 +50,7 @@ export class Main {
 
     private async _getGainers(): Promise<void | Symbol[]> {
         const stabelRegex = new RegExp(`${Main.STABLE}$`);
-        return ApiHelper.getInstance().getGainers()
+        return ApiHelper.getInstance().getGainers([`BTC${Main.STABLE}`])
             .catch(console.log)
             .then(async gainers => {
                 return gainers!.sort((g1, g2) => {
@@ -124,24 +124,30 @@ export class Main {
         const klineData = JSON.parse(event.data.toString()) as unknown as ISocketKline;
         const currentSymbol = this.symbolsList.value.find(symbol => symbol.symbol == klineData.data.k.s);
         
-        if(!currentSymbol || currentSymbol.lastOpenTime === klineData.data.k.t) return;
+        console.log('TARGET: ' + currentSymbol!._targetPrice);
+
+        if(!currentSymbol) return;
+        // console.log('CLOSE TIME: '+ klineData.data.k.T);
+        // console.log('A OPEN TIME: '+ klineData.data.k.t);
+        // console.log('C OPEN TIME: '+ currentSymbol.lastOpenTime);
+        if(currentSymbol.lastOpenTime === klineData.data.k.t) return;
         console.log(currentSymbol.round)
         
-        if((currentSymbol.round > 2 && 
-            currentSymbol.stopPrice > parseFloat(klineData.data.k.c)) || //TODO: remove this condition
-            currentSymbol.stagnedRouds >= 30) {
+        // if((currentSymbol.round > 2 && 
+        //     currentSymbol.stopPrice > parseFloat(klineData.data.k.c)) || //TODO: remove this condition
+        //     currentSymbol.stagnedRouds >= 30) {
             
-            console.log('STAGNED ROUND: ' + currentSymbol.stagnedRouds);
-            console.log(`REMOVING SYMBOL ${currentSymbol.symbol}\n STOP PRICE: ${currentSymbol.stopPrice} CURRENT PRICE: ${klineData.data.k.c}`);
+        //     console.log('STAGNED ROUND: ' + currentSymbol.stagnedRouds);
+        //     console.log(`REMOVING SYMBOL ${currentSymbol.symbol}\n STOP PRICE: ${currentSymbol.stopPrice} CURRENT PRICE: ${klineData.data.k.c}`);
             
-            currentSymbol.stopSymbolBot().then(() => {
-                this.symbolsList.value = this.symbolsList.value.filter(symbol => symbol.symbol != currentSymbol.symbol);
-            });            
+        //     currentSymbol.stopSymbolBot().then(() => {
+        //         this.symbolsList.value = this.symbolsList.value.filter(symbol => symbol.symbol != currentSymbol.symbol);
+        //     });            
 
-            return;
-        }
+        //     return;
+        // }
 
-        console.log(`CTime: ${currentSymbol!.lastOpenTime}, KTime ${klineData.data.k.t}`);
+        // console.log(`CTime: ${currentSymbol!.lastOpenTime}, KTime ${klineData.data.k.t}`);
         currentSymbol.updateCandles(klineData); //TODO: if the current symbol was removed, it can't be updated
     }
 

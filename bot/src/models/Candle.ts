@@ -107,7 +107,7 @@ export class Candle {
     }
 
     private _normalizeIndicator(dmIndicator: number, trueRange: number): number {
-        if(dmIndicator === 0 || trueRange === 0) return 0;
+        if(!dmIndicator || !trueRange || dmIndicator === 0 || trueRange === 0) return 0;
         return (dmIndicator / trueRange) * 100;
     }
 }

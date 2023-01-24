@@ -86,7 +86,7 @@ export class ADXCalculation {
                     candle.smoothedTrueRange = candles[i - 1].smoothedTrueRange - (candles[i - 1].smoothedTrueRange / this._range) + candle.trueRange;
                 }
 
-                if(i > ((this._range * 2) - 1)) {
+                if(i > ((this._range * 2))) {
                     if(!mms) {
                         mms = CalculationFacade.mms(candles.slice(this._range, (this._range * 2)).map(c => c.DX), this._range);
                         candle.ADX = mms.calc();
