@@ -161,8 +161,8 @@ export class Symbol {
                 console.log(this.symbol + ' BUY ' + Date());
                 this._holding = true; //move to order promise
                 this._orderRunning = false;
-                this._targetPrice = this._getTarget();
-                this._stopPrice = this._getStop();
+                // this._targetPrice = this._getTarget();
+                // this._stopPrice = this._getStop();
                 // Promise.resolve(new BuyOrder(this.symbol, parseFloat(filter.minNotional!))
                 //     .newOrder()
                 //     .then(_ => {
@@ -177,8 +177,8 @@ export class Symbol {
                 
             } else if(status === EnumStrategyResponse.SELL) { 
                 console.log(this.symbol + ' SELL');
-                this._targetPrice = this._getTarget();
-                this._stopPrice = this._getStop();
+                // this._targetPrice = this._getTarget();
+                // this._stopPrice = this._getStop();
                 this._holding = false; //move to order promise
                 this._orderRunning = false;
                 // Promise.resolve(new SellOrder(this.symbol, parseFloat(filter.minNotional!))
