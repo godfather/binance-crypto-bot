@@ -6,7 +6,7 @@ import { OrderBase } from "./OrderBase";
 export class BuyOrder extends OrderBase {
     public newOrder(): Promise<IOrder> {
         return ApiHelper.getPrivateInstance()
-            .newOrder(this.symbol, OrderSide.BUY, OrderType.MARKET, this.minNotional)
+            .newOrder(this.symbol, OrderSide.BUY, OrderType.MARKET, (this.minNotional * 2))
             .catch(console.log)
             .then(orderResponse => this.persistOrder(orderResponse!));
     }
