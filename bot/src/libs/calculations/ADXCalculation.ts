@@ -70,8 +70,6 @@ export class ADXCalculation {
                 candle.positiveDM = this._calcPositiveDM(currentCandle, prevCandle);
                 candle.negativeDM = this._calcNegativeDM(currentCandle, prevCandle);
 
-
-
                 if(i <= this._range) {
                     sumPositeveDM += candle.positiveDM;
                     sumNegativeDM += candle.negativeDM
@@ -86,12 +84,14 @@ export class ADXCalculation {
                     candle.smoothedTrueRange = candles[i - 1].smoothedTrueRange - (candles[i - 1].smoothedTrueRange / this._range) + candle.trueRange;
                 }
 
-                if(i > ((this._range * 2))) {
-                    if(!mms) {
-                        mms = CalculationFacade.mms(candles.slice(this._range, (this._range * 2)).map(c => c.DX), this._range);
-                        candle.ADX = mms.calc();
-                    } else candle.ADX = mms.update(candle.DX);
-                } else candle.ADX = 0;
+                if(i < ((this._range * 2) - 1)) candle.ADX = 0;
+                else {
+                    if(i === ((this._range * 2) - 1)) {
+                        candle.ADX = CalculationFacade.avg(candles.slice((this._range - 1), (this._range * 2)).map(c => c.DX), this._range).calc();
+                    } else {
+                        candle.ADX = (candles[i - 1].ADX * 13 + candle.DX) / 14;
+                    }
+                }
             });
 
         });
