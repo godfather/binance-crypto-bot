@@ -79,7 +79,7 @@ export class Candle {
     }
 
     public get DX(): number {
-        return (Math.abs(this.smoothedPositiveDM - this.smoothedNegativeDM) / Math.abs((this.smoothedPositiveDM + this.smoothedNegativeDM))) * 100;
+        return (Math.abs(this.smoothedPositiveDM - this.smoothedNegativeDM) / (this.smoothedPositiveDM + this.smoothedNegativeDM)) * 100;
     }
 
     private _processKline(data:IKline): void {
