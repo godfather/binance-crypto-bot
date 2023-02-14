@@ -9,6 +9,7 @@ import { IGainer } from '../models/iGainer';
 import { IKline } from '../models/iKline';
 import { IExchangeInfo } from '../models/iExchangeInfo';
 import { OrderResponse, OrderSide, OrderType, OrderParams } from '../models/iOrder';
+import BlackList from '../models/BlackList';
 
 export class ApiHelper extends BaseHttpClient {
     private static _instance:ApiHelper;
@@ -63,7 +64,14 @@ export class ApiHelper extends BaseHttpClient {
 
         return this.instance.post<unknown, OrderResponse>('/order', null, {
             params: {...params, signature},
-        }).catch(this.errorHandler);
+        }).catch(error => {
+            if(error.response) {
+                if(error.response.data.msg === 'This symbol is not permitted for this account.') {
+                    new BlackList({ symbol:symbol }).save();
+                }
+            }
+            return this.errorHandler(error)
+        });
     }
 
     public getExchangeInfo(symbols:string[]): Promise<IExchangeInfo> {
