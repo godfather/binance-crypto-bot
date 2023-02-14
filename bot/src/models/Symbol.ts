@@ -8,6 +8,7 @@ import { EnumExangeInfoFilterType, IExchangeInfo } from "./iExchangeInfo";
 import { BuyOrder } from "../libs/orders/BuyOrder";
 import { SellOrder } from "../libs/orders/SellOrder";
 import { Wallet } from "./Wallet";
+import { IOrder } from "./Order";
 
 export class Symbol {
     private _exchangeInfo: IExchangeInfo;
@@ -25,6 +26,8 @@ export class Symbol {
     private _candles: Observable<Candle[]> = new Observable<Candle[]>();
     private _trigger: Observable<EnumStrategyResponse> = new Observable<EnumStrategyResponse>();
     private _updateMetrics: Observable<boolean> = new Observable<boolean>();
+    private _currentOrder: Observable<IOrder|undefined> = new Observable<IOrder|undefined>();
+
 
     public static build = async (symbol:string, volume:number, priceChangePercent:number): Promise<Symbol> => {
         const newSymbol = new Symbol(symbol, volume, priceChangePercent);
@@ -150,7 +153,6 @@ export class Symbol {
         });
 
         this._trigger.subscribe(status => {
-            // console.log(`STATUS: ${status}, ORDER RUNNIN: ${this._orderRunning}`);
             console.log(`PRICE: ${this.candles[this.candlesSize -1].closePrice}, LOW PRICE: ${this.candles[this.candlesSize -1].lowPrice}, TARGET: ${this._targetPrice}, STOP: ${this._stopPrice}`);
 
             if(this._orderRunning) return;
@@ -159,44 +161,51 @@ export class Symbol {
             
             if(status === EnumStrategyResponse.BUY) {
                 console.log(this.symbol + ' BUY ' + Date());
+
+                if(Wallet.getInstance().getBalance() < (parseFloat(filter.minNotional!) * 2)) {
+                    console.log('INSUFICIENT FUNDS ' + Wallet.getInstance().getBalance());
+                    return;
+                }
+
                 this._holding = true; //move to order promise
                 this._orderRunning = false;
-                // this._targetPrice = this._getTarget();
-                // this._stopPrice = this._getStop();
-                // Promise.resolve(new BuyOrder(this.symbol, parseFloat(filter.minNotional!))
-                //     .newOrder()
-                //     .then(_ => {
-                //         this._orderRunning = false;
-                //         Wallet.getInstance().updateWallet(_ => true);
-                //     })
-                //     .catch(response => {
-                //         this._orderRunning = false;
-                //         console.log(response);
-                //     })
-                // );
+                Promise.resolve(new BuyOrder(this.symbol, parseFloat(filter.minNotional!))
+                    .newOrder()
+                    .then(order => this._currentOrder.value = order)
+                    .catch(response => {
+                        this._orderRunning = false;
+                        console.log(response);
+                    })
+                );
                 
             } else if(status === EnumStrategyResponse.SELL) { 
-                console.log(this.symbol + ' SELL');
+                console.log(this.symbol + ' SELL ' + Date());
+                // console.log(`MIN_NOTIONAL: ${filter.minNotional} executedQty: ${this._currentOrder.value!.executedQty}`);
                 // this._targetPrice = this._getTarget();
                 // this._stopPrice = this._getStop();
                 this._holding = false; //move to order promise
                 this._orderRunning = false;
-                // Promise.resolve(new SellOrder(this.symbol, parseFloat(filter.minNotional!))
-                //     .setCurrentPrice(this._candles.value[this.candlesSize -1].closePrice)
-                //     .newOrder()
-                //     .then(_ => {
-                //         this._orderRunning = false;
-                //         this._targetPrice = this._getTarget();
-                //         Wallet.getInstance().updateWallet(_ => true);
-                //     })
-                //     .catch(response => {
-                //         this._orderRunning = false;
-                //         console.log(response);
-                //     })
-                // );            
+                Promise.resolve(new SellOrder(this.symbol, parseFloat(this._currentOrder.value!.executedQty.toString()))
+                    .newOrder()
+                    .then(_ => this._currentOrder.value = undefined)
+                    .catch(response => {
+                        this._orderRunning = false;
+                        console.log(response);
+                    })
+                    // .then(_ => {
+                    //     this._orderRunning = false;
+                    //     this._targetPrice = this._getTarget();
+                    //     Wallet.getInstance().updateWallet(_ => true);
+                    // })
+                );            
             } else {
                 this._orderRunning = false;
             }
         })
+
+        this._currentOrder.subscribe(_ => {
+            this._orderRunning = false;
+            Wallet.getInstance().updateWallet(_ => true);
+        });
     }
 }
