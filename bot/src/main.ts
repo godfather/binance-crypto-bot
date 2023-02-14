@@ -50,15 +50,16 @@ export class Main {
 
     private async _getGainers(): Promise<void | Symbol[]> {
         const stabelRegex = new RegExp(`${Main.STABLE}$`);
-        return ApiHelper.getInstance().getGainers([`BTC${Main.STABLE}`])
+        return ApiHelper.getInstance().getGainers([`BTC${Main.STABLE}`, `LTC${Main.STABLE}`, `ETH${Main.STABLE}`, `ADA${Main.STABLE}`])
+        // return ApiHelper.getInstance().getGainers()
             .catch(console.log)
             .then(async gainers => {
                 return gainers!.sort((g1, g2) => {
                     return parseFloat(g2.priceChangePercent) - parseFloat(g1.priceChangePercent);
                 })
-                .filter(gainer => parseFloat(gainer.priceChangePercent) > 0)
+                // .filter(gainer => parseFloat(gainer.priceChangePercent) > 0)
                 .filter(gainer => stabelRegex.test(gainer.symbol))
-                .slice(0,3)
+                // .slice(0,3)
                 .map(async gainer => {
                     return await Symbol.build(gainer.symbol, parseFloat(gainer.volume), parseFloat(gainer.priceChangePercent));
                 });
@@ -124,12 +125,8 @@ export class Main {
         const klineData = JSON.parse(event.data.toString()) as unknown as ISocketKline;
         const currentSymbol = this.symbolsList.value.find(symbol => symbol.symbol == klineData.data.k.s);
         
-        console.log('TARGET: ' + currentSymbol!._targetPrice);
-
         if(!currentSymbol) return;
-        // console.log('CLOSE TIME: '+ klineData.data.k.T);
-        // console.log('A OPEN TIME: '+ klineData.data.k.t);
-        // console.log('C OPEN TIME: '+ currentSymbol.lastOpenTime);
+
         if(currentSymbol.lastOpenTime === klineData.data.k.t) return;
         console.log(currentSymbol.round)
         
@@ -147,7 +144,6 @@ export class Main {
         //     return;
         // }
 
-        // console.log(`CTime: ${currentSymbol!.lastOpenTime}, KTime ${klineData.data.k.t}`);
         currentSymbol.updateCandles(klineData); //TODO: if the current symbol was removed, it can't be updated
     }
 
