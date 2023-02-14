@@ -14,6 +14,10 @@ export class Wallet {
         return parseFloat(this.status.balances.find(balance => balance.asset === 'USDT')!.free) >= 1;
     }
 
+    public getBalance(symbol = 'USDT'): number {
+        return parseFloat(this.status.balances.find(balance => balance.asset === symbol)!.free);
+    }
+
     //singleton
     private constructor() {}
 
