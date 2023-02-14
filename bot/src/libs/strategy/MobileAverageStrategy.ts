@@ -21,6 +21,7 @@ export class MobileAverageStrategy implements IStrategy {
     private _longEMA: number;
     private _closePrices: number[];
     private _candles: Candle[];
+    private _symbol: string;
 
     public constructor() {}
 
@@ -36,6 +37,7 @@ export class MobileAverageStrategy implements IStrategy {
         }
 
         this._candles = candles;
+        this._symbol = this._candles[0].symbol;
 
         if(this._candles[this._candles.length -1].closePrice <= stop && holding) return EnumStrategyResponse.SELL;
 
@@ -46,8 +48,8 @@ export class MobileAverageStrategy implements IStrategy {
         const lastClosePrice = this._closePrices[this._closePrices.length - 2];
         const currentClosePrice = this._closePrices[this._closePrices.length - 1];
 
-        console.log(`FAST: ${this._fastEMA}  SLOW ${this._slowEMA}  LONG ${this._longEMA}`);
-        console.log(`+DI: ${latestCandle.positiveDI}  -DI ${latestCandle.negativeDI}  ADX ${latestCandle.ADX}`);
+        console.log(`${this._symbol} FAST: ${this._fastEMA}  SLOW ${this._slowEMA}  LONG ${this._longEMA}`);
+        console.log(`${this._symbol} +DI: ${latestCandle.positiveDI}  -DI ${latestCandle.negativeDI}  ADX ${latestCandle.ADX}`);
 
         if(holding) {
             if(currentClosePrice >= target) return EnumStrategyResponse.SELL;
@@ -58,7 +60,9 @@ export class MobileAverageStrategy implements IStrategy {
            this._slowEMA > this._longEMA &&
            latestCandle.ADX > 25 &&
            latestCandle.positiveDI > (latestCandle.negativeDI + 5) &&
-           (latestCandle.lowPrice < this._fastEMA && latestCandle.lowPrice > this._slowEMA)) {
+           (latestCandle.closePrice < target && latestCandle.closePrice > stop)
+        //    (latestCandle.lowPrice < this._fastEMA && latestCandle.lowPrice > this._slowEMA)) {
+        ) {
 
             
             // if(currentClosePrice < lastClosePrice) {
@@ -90,6 +94,6 @@ export class MobileAverageStrategy implements IStrategy {
         const adx = CalculationFacade.adx(candles, 14);
         this._candles = candles;
 
-        console.table(adx.values);
+        // console.table(adx.values);
     }
 }
