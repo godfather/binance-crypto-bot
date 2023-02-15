@@ -79,6 +79,18 @@ const orderSchema = new mongoose.Schema({
         required:true,
         default:false
     },
+    targetPrice:{
+        type:mongoose.Schema.Types.Decimal128,
+        required:true,
+        default:0,
+        get:convertToNumber
+    },
+    stopPrice:{
+        type:mongoose.Schema.Types.Decimal128,
+        required:true,
+        default:0,
+        get:convertToNumber
+    },
     averagePrice: {
         type:mongoose.Schema.Types.Decimal128,
         required:true,

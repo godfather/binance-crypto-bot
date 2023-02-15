@@ -12,6 +12,9 @@ afterAll(done => done());
 describe('Testing order classes', () => {
     test('Testing buy order persist on database', async () => {
         const order = new BuyOrder('BNBUSDT', 10.00000000);
+        order.setStopPrice(5.00000000);
+        order.setTargetPrice(15.00000000);
+        
         const result = await order.newOrder();
         expect(typeof result.orderId === 'number').toEqual(true);
         expect(result.sold!).toEqual(false);
