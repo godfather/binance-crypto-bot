@@ -7,12 +7,14 @@ export class BuyOrder extends OrderBase {
     private _targetPrice: number; 
     private _stopPrice: number;
     
-    public setTargetPrice(target: number) {
+    public setTargetPrice(target: number): BuyOrder {
         this._targetPrice = target;
+        return this;
     }
-
-    public setStopPrice(stop: number) {
+    
+    public setStopPrice(stop: number): BuyOrder {
         this._stopPrice = stop;
+        return this;
     }
     
     public newOrder(): Promise<IOrder> {

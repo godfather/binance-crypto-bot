@@ -7,11 +7,13 @@ import { CryptoBot } from './libs/socket/CryptoBot';
 import { MessageEvent } from "ws";
 import { ISocketKline } from './models/iKline';
 import { Socket } from './libs/socket/Socket';
+import Order from './models/Order';
+import { OrderSide } from './models/iOrder';
 
 
 export class Main {
     private static _instance: Main;
-    private static STABLE: string;
+    private static _baseSymbols: string[];
     public symbolsList: Observable<Symbol[]>;
     public wallet: Observable<Wallet>;
     private _socketUrl:Observable<string>;
@@ -27,16 +29,18 @@ export class Main {
         this._socketRoundCount = 0;
     };
 
-    public static getInstance(stable: string) {
+    public static getInstance(baseSymbols: string[]) {
         if(!this._instance) this._instance = new Main();
-        this.STABLE = stable;
+        this._baseSymbols = baseSymbols;
         return this._instance;
     }
 
     public run() {
         this._getWallet().then(wallet => {
+            console.table(wallet.status.balances);
             this.wallet.value = wallet;
-            this._initGainers();
+            if(wallet.hasFounds) return this._setupSymbols();
+            console.log('WALLET HAS NO FOUNDS :( ' + wallet.getBalance());
         });
         
         this._observers();
@@ -48,66 +52,31 @@ export class Main {
                 .then(walletinfo => Wallet.getInstance(walletinfo!));
     }
 
-    private async _getGainers(): Promise<void | Symbol[]> {
-        const stabelRegex = new RegExp(`${Main.STABLE}$`);
-        return ApiHelper.getInstance().getGainers([`BTC${Main.STABLE}`, `LTC${Main.STABLE}`, `ETH${Main.STABLE}`, `ADA${Main.STABLE}`])
-        // return ApiHelper.getInstance().getGainers()
-            .catch(console.log)
-            .then(async gainers => {
-                return gainers!.sort((g1, g2) => {
-                    return parseFloat(g2.priceChangePercent) - parseFloat(g1.priceChangePercent);
-                })
-                // .filter(gainer => parseFloat(gainer.priceChangePercent) > 0)
-                .filter(gainer => stabelRegex.test(gainer.symbol))
-                // .slice(0,3)
-                .map(async gainer => {
-                    return await Symbol.build(gainer.symbol, parseFloat(gainer.volume), parseFloat(gainer.priceChangePercent));
-                });
-            })
-            .then(symbols => {
-                if(symbols.length < 1) return;
-                return Promise.all(symbols)
-            })
-    }
+    private _setupSymbols(): void {
+        if(Main._baseSymbols.length === 0) return;
 
-    private _initGainers() {
-        setTimeout(() => {
-            console.log('aqui ' + this._initialized);
-            this._initialized = true;
+        Order.find({ sold: false, side: OrderSide.BUY }).then(orders => {
+            Main._baseSymbols = Main._baseSymbols.concat(orders.map(order => order.symbol).filter(item => Main._baseSymbols.indexOf(item) < 0));
+            
+            console.log(Main._baseSymbols);
 
-            this._getGainers().then(symbols => {
-                if(!symbols || symbols.length < 1) {
-                    console.log('Symbols List is empty...');
-                    return this._initGainers();
-                }
-                return this._setupSymbols(symbols!);
-            });
+            const symbols = Main._baseSymbols.map(symbol => Symbol.build(symbol));
 
-        }, (!this._initialized ? 10 : 60 * 10 * 1000));
-    }
+            return Promise.all(symbols);
+        }).then(symbols => {
+            symbols.forEach(s => s.setStrategy({
+                type: 'ema',
+                data: { fastRange: 25, slowRange: 50, longRange: 100 }
+            }));
 
-    private _setupSymbols(symbols: Symbol[]): void {
-        if(symbols.length < 1) return;
-
-        symbols.forEach(s => s.setStrategy({
-            type: 'ema',
-            data: { fastRange: 25, slowRange: 50, longRange: 100 }
-        }));
-
-        this.symbolsList.value = symbols;
+            this.symbolsList.value = symbols;
+        });
     }
 
     private _observers() {
         this.symbolsList.subscribe(symbols => {
-            if(symbols.length < 1) {
-                console.log('Symbols List is empty...');
-                return this._initGainers();             
-            }
-
             this._mountSocketUrl(symbols);
         });
-
-        this.wallet.subscribe(wallet => console.table(wallet.status.balances)); //TODO: remove this log
 
         this._socketUrl.subscribe(url => {
             console.log(url);
@@ -129,21 +98,6 @@ export class Main {
 
         if(currentSymbol.lastOpenTime === klineData.data.k.t) return;
         console.log(currentSymbol.round)
-        
-        // if((currentSymbol.round > 2 && 
-        //     currentSymbol.stopPrice > parseFloat(klineData.data.k.c)) || //TODO: remove this condition
-        //     currentSymbol.stagnedRouds >= 30) {
-            
-        //     console.log('STAGNED ROUND: ' + currentSymbol.stagnedRouds);
-        //     console.log(`REMOVING SYMBOL ${currentSymbol.symbol}\n STOP PRICE: ${currentSymbol.stopPrice} CURRENT PRICE: ${klineData.data.k.c}`);
-            
-        //     currentSymbol.stopSymbolBot().then(() => {
-        //         this.symbolsList.value = this.symbolsList.value.filter(symbol => symbol.symbol != currentSymbol.symbol);
-        //     });            
-
-        //     return;
-        // }
-
         currentSymbol.updateCandles(klineData); //TODO: if the current symbol was removed, it can't be updated
     }
 
@@ -153,4 +107,4 @@ export class Main {
     }
 }
 
-Main.getInstance('USDT').run();
+Main.getInstance(['BNBUSDT', 'LTCUSDT', 'ETHUSDT', 'BTCUSDT']).run();

@@ -10,15 +10,15 @@ export abstract class BaseHttpClient {
     }
 
     public errorHandler(error:any) {
+        console.log(`ERROR URI: ${JSON.stringify(error.config.url)}`);
+
         if(error.response) {
             console.log('ERROR RESPONSE: Request made and server responded with an error!');
-            console.log(`ERROR URI: ${error.response.URI}`);
             console.log(`ERROR STATUS: ${error.response.status}`);
             console.log(`ERROR HEADERS: ${JSON.stringify(error.response.headers)}`);
             console.log(`ERROR DATA: ${JSON.stringify(error.response.data)}`);
         } else if(error.request) {
             console.log('ERROR REQUEST: The request was made but no response was received!');
-            console.log(`ERROR URI: ${error.response.URI}`);
             console.log(`ERROR DATA: ${JSON.stringify(error.response.data)}`);
         } else {
             console.log('ERROR: Something happened in setting up the request that triggered an Error');

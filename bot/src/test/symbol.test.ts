@@ -39,7 +39,7 @@ describe('Testing the symbol class\' methods', () => {
     };
 
     test('testing symbol creation', async () => {
-        const symbol = await Symbol.build('BNBUSDT', 300, 1.2);
+        const symbol = await Symbol.build('BNBUSDT');
         const filter = symbol.exchangeInfo.symbols[0].filters.find(filter => filter.filterType == EnumExangeInfoFilterType.MIN_NOTIONAL);
         expect.assertions(2);
         expect(symbol.candlesSize).toEqual(25);
@@ -49,7 +49,7 @@ describe('Testing the symbol class\' methods', () => {
     test('testing updating symbols candles', async () => {
         expect.assertions(2);
 
-        const symbol = await Symbol.build('BNBUSDT', 300, 1.2);
+        const symbol = await Symbol.build('BNBUSDT');
         symbol.updateCandles(testKline);
         expect(symbol.candles[symbol.candles.length - 1].closePrice).toEqual(0.0020);
         expect(symbol.candlesSize).toEqual(25);
@@ -74,7 +74,7 @@ describe('Testing the symbol class\' methods', () => {
             const currentBNBBalance = wallet.status.balances.find(balance => balance.asset === 'BNB')!.free;    
             console.log(currentBNBBalance);
 
-            Symbol.build('BNBUSDT', 300, 1.2).then(symbol => {
+            Symbol.build('BNBUSDT').then(symbol => {
                 symbol.setStrategy(strategyDefinition);    
                 testKline.data.k.c = symbol.candles[symbol.candles.length - 1].closePrice.toString(); // Close price
                 symbol.updateCandles(testKline);

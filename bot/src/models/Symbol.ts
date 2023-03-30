@@ -29,10 +29,12 @@ export class Symbol {
     private _currentOrder: Observable<IOrder|undefined> = new Observable<IOrder|undefined>();
 
 
-    public static build = async (symbol:string, volume:number, priceChangePercent:number): Promise<Symbol> => {
-        const newSymbol = new Symbol(symbol, volume, priceChangePercent);
+    public static build = async (symbol:string, order: IOrder | undefined): Promise<Symbol> => {
+        const newSymbol = new Symbol(symbol);
         await newSymbol._getKlines();
         await newSymbol._getExcangeInfo();
+
+        if(order) newSymbol.setOrder(order);
         return newSymbol;
     }
 
@@ -72,22 +74,23 @@ export class Symbol {
         return this._stagnedRounds;
     }
     
-    private constructor(
-        public symbol:string, 
-        public volume:number, 
-        public priceChangePercent:number) {
-            this._defaultKlineLimit = 100;
-            this._updateMetrics.value = false;
-            this._round = 0;
-            this._stagnedRounds = 0;
-            this._orderRunning = false;
-            this._holding = false;
-            this._observers();
+    private constructor(public symbol:string) {
+        this._defaultKlineLimit = 100;
+        this._updateMetrics.value = false;
+        this._round = 0;
+        this._stagnedRounds = 0;
+        this._orderRunning = false;
+        this._holding = false;
+        this._observers();
     }
 
     public setStrategy(strategyDefinition: IStrategyDefinition) {
         this._strategy = StrategyFactory.build(strategyDefinition);
-    }    
+    }
+
+    public setOrder(order: IOrder) {
+        this._currentOrder.value = order;
+    }
 
     public updateCandles(kline:ISocketKline|IKline): void {
         const candle = new Candle(kline, this.symbol);
@@ -167,12 +170,13 @@ export class Symbol {
                     return;
                 }
 
-                this._holding = true; //move to order promise
                 this._orderRunning = false;
                 Promise.resolve(new BuyOrder(this.symbol, parseFloat(filter.minNotional!))
-                    .newOrder()
-                    .then(order => this._currentOrder.value = order)
-                    .catch(response => {
+                .setTargetPrice(this._targetPrice)
+                .setStopPrice(this._stopPrice)
+                .newOrder()
+                .then(order => this._currentOrder.value = order)
+                .catch(response => {
                         this._orderRunning = false;
                         console.log(response);
                     })
@@ -180,23 +184,21 @@ export class Symbol {
                 
             } else if(status === EnumStrategyResponse.SELL) { 
                 console.log(this.symbol + ' SELL ' + Date());
-                // console.log(`MIN_NOTIONAL: ${filter.minNotional} executedQty: ${this._currentOrder.value!.executedQty}`);
-                // this._targetPrice = this._getTarget();
-                // this._stopPrice = this._getStop();
-                this._holding = false; //move to order promise
-                this._orderRunning = false;
+                
                 Promise.resolve(new SellOrder(this.symbol, parseFloat(this._currentOrder.value!.executedQty.toString()))
                     .newOrder()
-                    .then(_ => this._currentOrder.value = undefined)
+                    .then(_ => {
+                        const order = this._currentOrder.value!;
+                        order.sold = true;
+                        order.save();
+                        this._holding = false; //move to order promise
+                        this._orderRunning = false;
+                        this._currentOrder.value = undefined
+                    })
                     .catch(response => {
                         this._orderRunning = false;
                         console.log(response);
                     })
-                    // .then(_ => {
-                    //     this._orderRunning = false;
-                    //     this._targetPrice = this._getTarget();
-                    //     Wallet.getInstance().updateWallet(_ => true);
-                    // })
                 );            
             } else {
                 this._orderRunning = false;
@@ -205,6 +207,7 @@ export class Symbol {
 
         this._currentOrder.subscribe(_ => {
             this._orderRunning = false;
+            this._holding = true;
             Wallet.getInstance().updateWallet(_ => true);
         });
     }

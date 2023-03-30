@@ -13,8 +13,10 @@ export class SellOrder extends OrderBase {
     }
 
     public newOrder(): Promise<IOrder | void> {
+        const sellValue = this.minNotional - ((this.minNotional * 1.5) / 100);
+
         return ApiHelper.getPrivateInstance()
-                    .newOrder(this.symbol, OrderSide.SELL, OrderType.MARKET, this.minNotional)
+                    .newOrder(this.symbol, OrderSide.SELL, OrderType.MARKET, sellValue)
                     .catch(console.log)
                     .then(orderResponse => this.persistOrder(orderResponse!));
     }
